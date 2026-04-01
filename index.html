@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desta University — Week 1 Training</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#F8F6F1;color:#2D2D2D;-webkit-font-smoothing:antialiased;font-family:system-ui,-apple-system,sans-serif}
+select,input,textarea,button{font-family:inherit}
+input,textarea,select{outline:none}
+input:focus,textarea:focus,select:focus{border-color:#8B7355!important}
+button{transition:all .15s ease;border:none;cursor:pointer}
+button:not(:disabled):hover{opacity:.88;transform:translateY(-1px)}
+button:not(:disabled):active{transform:translateY(0)}
+button:disabled{cursor:default;opacity:.4}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#C5C5C5;border-radius:3px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes growBar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes walkRight{from{transform:translateX(-60px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes pulseSoft{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes expandOut{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState}=React;
+const C={charcoal:"#2D2D2D",bronze:"#8B7355",ivory:"#F8F6F1",blue:"#1E4A8A",blueLt:"#EBF0F8",white:"#FFFFFF",green:"#4CAF50",greenLt:"#E8F5E9",red:"#F44336",redLt:"#FFEBEE",orange:"#FF9800",orangeLt:"#FFF3E0",purple:"#9C27B0",purpleLt:"#F3E5F5",gray:"#555555",grayLt:"#E0E0E0"};
+
+/* ========== DATA ========== */
+const LICENSE_DATA=[
+{abbr:"PMHNP-BC",full:"Psychiatric Mental Health Nurse Practitioner, Board Certified",type:"prescriber"},
+{abbr:"LCSW",full:"Licensed Clinical Social Worker",type:"therapist"},
+{abbr:"LPC",full:"Licensed Professional Counselor",type:"therapist"},
+{abbr:"LMHC",full:"Licensed Mental Health Counselor",type:"therapist"},
+{abbr:"LMFT",full:"Licensed Marriage and Family Therapist",type:"therapist"},
+{abbr:"MD (Psychiatry)",full:"Medical Doctor, Psychiatry",type:"prescriber"},
+{abbr:"DO (Psychiatry)",full:"Doctor of Osteopathic Medicine, Psychiatry",type:"prescriber"},
+{abbr:"PsyD",full:"Doctor of Psychology",type:"therapist"},
+{abbr:"PA-C",full:"Physician Assistant, Certified",type:"prescriber"},
+{abbr:"NP / APRN",full:"Nurse Practitioner / Advanced Practice Registered Nurse",type:"prescriber"},
+{abbr:"MHT",full:"Mental Health Technician",type:"support"},
+{abbr:"BCBA",full:"Board Certified Behavior Analyst",type:"therapist"},
+{abbr:"PhD (Clin Psych)",full:"Doctor of Philosophy, Clinical Psychology",type:"therapist"},
+];
+
+const CLIENT_NAMES=["Sterling Institute","Contemporary Care \u2013 Mental Health","Docs Medical Group \u2013 Primary and Urgent Care","Ritu Suri & Associates \u2013 Primary Care","NJ - Psych Candidates","Future Potential Clients"];
+
+const CANDIDATES=[
+{id:1,name:"Sarah Chen",cred:"PMHNP-BC",states:["CT","NY"],exp:"8 years outpatient, 3 years child/adolescent",pref:"Hybrid",salary:"$140,000",answer:{client:"Sterling Institute",qualifies:true,notes:"CT license + child experience + hybrid preference. Sterling is HIGH priority and requires child/adolescent."}},
+{id:2,name:"James Rivera",cred:"LCSW",states:["FL"],exp:"5 years community mental health",pref:"Fully remote",salary:"$75,000",answer:{client:"Contemporary Care \u2013 Mental Health",qualifies:"conditional",notes:"FL license matches Contemporary Care FL. But wants fully remote \u2014 Contemporary Care is hybrid. Needs clarification."}},
+{id:3,name:"Dr. Amelia Foster",cred:"MD, Psychiatrist",states:["CT"],exp:"12 years inpatient/outpatient, adult and geriatric",pref:"On-site including weekends",salary:"$320,000",answer:{client:"Docs Medical Group \u2013 Primary and Urgent Care",qualifies:true,notes:"CT license, on-site, weekends OK. DOCs requires on-site with weekend rotation."}},
+{id:4,name:"Marcus Williams",cred:"MHT",states:["NJ"],exp:"2 years residential treatment",pref:"Full-time",salary:"Open",answer:{client:"NJ - Psych Candidates",qualifies:"conditional",notes:"MHT is not a licensed provider. NJ location fits NJ-Psych bucket. Confirm if client has MHT roles open."}},
+{id:5,name:"Dr. Linda Park",cred:"DO, Psychiatrist",states:["MA"],exp:"6 years telehealth-only",pref:"Remote only",salary:"$280,000",answer:{client:"Future Potential Clients",qualifies:false,notes:"MA-only license. No current client in MA. Remote-only preference. Log in Future Potential Clients or 8-Future Pipeline."}},
+];
+
+const REAL_STATUSES=["0 - New Candidate","1 - Initial Screening","2 - DestaHealth Review","3 - Client Internal Process","4 - Contract Negotiation","5 - Offer Accepted","6 - Started w/ Client - Day 1","7 - No Go - Find Other Client","8 - Future Pipeline"];
+const REAL_SOURCES=["Indeed","LinkedIn","Physician Job Board","Therapist Job Board","Locumtenens"];
+
+const ATS_SCENARIOS=[
+{scenario:"A PMHNP-BC applied through Indeed. Resume received. Nobody has looked at it yet.",answer:"0 - New Candidate",why:"Resume just arrived. No review, no outreach. This is where every candidate starts."},
+{scenario:"You reviewed the resume, verified CT license, and confirmed the candidate matches Sterling criteria. You are about to send outreach.",answer:"0 - New Candidate",why:"Even after your review, the candidate stays at 0 until Farhaz begins screening. Your verification is internal prep \u2014 the ATS status tracks the hiring process stage."},
+{scenario:"Farhaz is conducting the phone screening with the candidate this afternoon.",answer:"1 - Initial Screening",why:"Farhaz is actively screening. The candidate has moved past New Candidate into the screening stage."},
+{scenario:"Farhaz approved the candidate. You sent the package to Rylan. Rylan and the DestaHealth team are reviewing.",answer:"2 - DestaHealth Review",why:"The candidate is being evaluated internally by the DestaHealth team before going to the client."},
+{scenario:"DestaHealth approved the candidate. The package has been sent to Sterling Institute. Waiting for their response.",answer:"3 - Client Internal Process",why:"The client is now evaluating the candidate. This is outside DestaHealth's control."},
+{scenario:"Sterling wants to hire the candidate. They are discussing salary, schedule, and start date with the candidate.",answer:"4 - Contract Negotiation",why:"Terms are being finalized between the client and candidate."},
+{scenario:"The candidate accepted Sterling's offer. Start date is confirmed for next Monday.",answer:"5 - Offer Accepted",why:"Accepted offer. The candidate is committed and waiting to start."},
+{scenario:"The candidate completed their first day at Sterling Institute.",answer:"6 - Started w/ Client - Day 1",why:"Placed and working. This is the final success status."},
+{scenario:"Sterling rejected the candidate after the interview, but the candidate has a CT license and could fit DOCs or Contemporary Care.",answer:"7 - No Go - Find Other Client",why:"Rejected by one client but still viable. Route to a different client \u2014 do not disqualify."},
+{scenario:"A strong psychiatrist with an MA-only license applied. No current client in MA, but could be valuable when you expand there.",answer:"8 - Future Pipeline",why:"No current match but worth keeping. Future Pipeline holds candidates for later opportunities."},
+];
+
+const ATS_FORM_CANDIDATE={name:"Jennifer Martinez",title:"PMHNP-BC",city:"Hartford",state:"CT",email:"j.martinez.np@gmail.com",phone:"(860) 442-7831",salary:"$145,000",source:"Indeed",client:"Sterling Institute",status:"0 - New Candidate",assignedTo:"(your name)"};
+
+const ATS_FORM_FIELDS=[
+{field:"Candidate name",answer:"Jennifer Martinez",check:function(v){return v.toLowerCase().includes("jennifer")&&v.toLowerCase().includes("martinez")}},
+{field:"Status",answer:"0 - New Candidate",type:"select",options:REAL_STATUSES},
+{field:"Client",answer:"Sterling Institute",type:"select",options:CLIENT_NAMES},
+{field:"Job Title",answer:"PMHNP-BC",check:function(v){return v.toUpperCase().includes("PMHNP")}},
+{field:"City",answer:"Hartford",check:function(v){return v.toLowerCase().includes("hartford")}},
+{field:"State",answer:"CT",check:function(v){var x=v.trim().toUpperCase();return x==="CT"||x==="CONNECTICUT"}},
+{field:"Email",answer:"j.martinez.np@gmail.com",check:function(v){return v.includes("j.martinez")&&v.includes("@")}},
+{field:"Phone Number",answer:"(860) 442-7831",check:function(v){return v.includes("860")&&v.includes("442")&&v.includes("7831")}},
+{field:"Salary Expectations",answer:"$145,000",check:function(v){return v.includes("145")}},
+{field:"Source",answer:"Indeed",type:"select",options:REAL_SOURCES},
+{field:"Assigned To",answer:"(your name)",check:function(v){return v.trim().length>1}},
+];
+
+const ATS_PROFILE_ERRORS=[
+{profile:{"Candidate name":"Sarah J. Chen","Status":"1 - Initial Screening","Client":"Sterling Institute","Job Title":"PMHNP","State":"CT","Source":"Indeed","Assigned To":"Farhaz Ali"},
+errors:["Job Title should be PMHNP-BC (board certification missing from credential)"],fields:["Job Title"]},
+{profile:{"Candidate name":"Dr. James Rivera","Status":"0 - New Candidate","Client":"Contemporary Care \u2013 Mental Health","Job Title":"LCSW","State":"FL","Source":"LinkedIn","Assigned To":""},
+errors:["'Dr.' prefix incorrect \u2014 LCSW is not a doctoral credential","Assigned To is blank \u2014 every entry needs an owner"],fields:["Candidate name","Assigned To"]},
+{profile:{"Candidate name":"Marcus Williams","Status":"2 - DestaHealth Review","Client":"Docs Medical Group \u2013 Primary and Urgent Care","Job Title":"Psychiatrist","State":"NJ","Source":"Indeed","Assigned To":"Farhaz Ali"},
+errors:["Job Title should be MHT (Mental Health Technician), not Psychiatrist","Status is DestaHealth Review but MHTs may not be licensed providers \u2014 verify role eligibility first"],fields:["Job Title","Status"]},
+{profile:{"Candidate name":"Linda Park","Status":"0 - New Candidate","Client":"Sterling Institute","Job Title":"DO, Psychiatry","State":"MA","Source":"Physician Job Board","Assigned To":"Farhaz Ali"},
+errors:["Client should not be Sterling (MA license, Sterling is CT)","Should be Future Potential Clients or 8-Future Pipeline status since no current MA client"],fields:["Client"]},
+{profile:{"Candidate name":"Amelia Foster","Status":"1 - Initial Screening","Client":"Docs Medical Group \u2013 Primary and Urgent Care","Job Title":"MD","State":"Connecticut","Source":"Indeed","Assigned To":"Farhaz Ali"},
+errors:["State should be 'CT' abbreviation, not 'Connecticut'","Job Title should specify specialty: 'MD, Psychiatry'"],fields:["State","Job Title"]},
+];
+
+const FILL_BLANKS=[
+{id:1,prompt:"A PMHNP can prescribe medication, but a(n) _______ cannot.",accepts:["lcsw","lpc","lmhc","lmft","therapist","social worker","counselor"],answer:"LCSW / LPC / LMHC / LMFT (any therapist credential)"},
+{id:2,prompt:"Sterling Institute requires candidates with _______ experience.",accepts:["child","adolescent","child and adolescent","children","pediatric"],answer:"child and adolescent"},
+{id:3,prompt:"A candidate must hold a license in the state where the _______ is located.",accepts:["patient","position","job","practice","clinic"],answer:"patient (or position)"},
+{id:4,prompt:"Docs Medical Group requires providers to work _______.",accepts:["on-site","onsite","on site","in person","in-person"],answer:"on-site"},
+{id:5,prompt:"If a candidate's license is expired, you must _______ them.",accepts:["disqualify","dq","not advance","reject","flag","hold"],answer:"disqualify"},
+{id:6,prompt:"PMHNP-BC stands for Psychiatric Mental Health Nurse Practitioner, _______.",accepts:["board certified","bc","board-certified"],answer:"Board Certified"},
+{id:7,prompt:"When you cannot verify a license on the state board site, escalate to _______.",accepts:["biruh","biruh mezgebu"],answer:"Biruh"},
+{id:8,prompt:"IOP stands for _______ Outpatient Program.",accepts:["intensive"],answer:"Intensive"},
+{id:9,prompt:"The process to be approved to bill insurance is called _______.",accepts:["credentialing","credential"],answer:"credentialing"},
+{id:10,prompt:"A 1099 contractor pays their own _______ and arranges their own benefits.",accepts:["taxes","tax","self-employment tax"],answer:"taxes"},
+];
+
+const RESUME_ITEMS=[
+{id:1,field:"Font style",before:"Times New Roman, 11pt",after:"Arial, 12pt, bold header",ok:true,explain:"You changed how it looks, not what it says. Fonts and sizes are appearance."},
+{id:2,field:"Candidate name",before:"sarah chen",after:"Sarah Chen",ok:true,explain:"Capitalizing a name is fixing presentation. The name is the same."},
+{id:3,field:"Credential spelling",before:"Psychiatric Nurse Practioner",after:"Psychiatric Nurse Practitioner",ok:true,explain:"The resume had a typo. 'Practitioner' is the correct standard spelling."},
+{id:4,field:"Employment dates",before:"2019 to 2023",after:"2019 \u2013 2023",ok:true,explain:"You changed 'to' to a dash. The dates are identical."},
+{id:5,field:"Employment dates",before:"2019 to 2023",after:"01/2019 \u2013 12/2023",ok:false,explain:"The resume says 2019 and 2023. You added January and December. Those months are not on the resume."},
+{id:6,field:"Employer name",before:"Hartford Medical Center",after:"Hartford Regional Medical Center",ok:false,explain:"You added 'Regional.' Cannot change what the candidate wrote. Flag it for Biruh if it looks wrong."},
+{id:7,field:"University name",before:"MSN, University of Connecticut",after:"MSN, Yale University",ok:false,explain:"You changed where they went to school. Never acceptable."},
+{id:8,field:"Skills layout",before:"Skills in a paragraph",after:"Same skills as bullet points",ok:true,explain:"Same words, different layout. This is fine."},
+{id:9,field:"Phone format",before:"(860) 555-0142",after:"860.555.0142",ok:true,explain:"Same number, different format. This is fine."},
+{id:10,field:"Job title",before:"PMHNP",after:"Senior PMHNP",ok:false,explain:"You added 'Senior.' Cannot add a title the candidate did not use."},
+{id:11,field:"License number",before:"CT-NP-28491",after:"CT-NP-28491",ok:true,explain:"Nothing changed. Correct \u2014 when in doubt, leave it exactly as is."},
+{id:12,field:"References",before:"(not on resume)",after:"'Available upon request' added",ok:false,explain:"This was not on the resume. Never add content that is not already there."},
+];
+
+const RESUME_MISTAKES=[
+{id:1,original:"Hartford Medical Center",converted:"Hartford Regional Medical Center",field:"Employer",explain:"Added 'Regional.' Match the resume exactly."},
+{id:2,original:"Graduated 2018",converted:"Graduated 2017",field:"Graduation year",explain:"Changed the year. Resume says 2018."},
+{id:3,original:"Licensed in CT",converted:"Licensed in CT, NY",field:"License states",explain:"Added NY. Resume only lists CT."},
+{id:4,original:"PMHNP",converted:"Senior PMHNP",field:"Job title",explain:"Added 'Senior.' Match it exactly."},
+{id:5,original:"(no references section)",converted:"References: Available upon request",field:"References",explain:"Added content that doesn't exist on the resume."},
+];
+
+const BOOLEAN_EXERCISES=[
+{prompt:"Find PMHNPs in Connecticut who work in outpatient settings",sample:'PMHNP AND outpatient AND Connecticut'},
+{prompt:"Find psychiatrists (MD or DO) in Massachusetts with child experience",sample:'(psychiatrist OR MD OR DO) AND (child OR adolescent) AND Massachusetts'},
+{prompt:"Find LCSWs in New Jersey with private practice experience",sample:'LCSW AND "private practice" AND "New Jersey"'},
+{prompt:"Find nurse practitioners in CT or NY with prescribing authority",sample:'(NP OR "nurse practitioner" OR APRN) AND (Connecticut OR "New York") AND prescri*'},
+{prompt:"Find mental health technicians in the Hartford area",sample:'(MHT OR "mental health technician") AND Hartford AND CT'},
+];
+
+const VERIFY_CANDIDATES=[
+{name:"Rachel Thompson",cred:"PMHNP-BC",state:"CT",result:"active",details:"License #CT-NP-38291, expires 03/2027, Active"},
+{name:"David Kim",cred:"LCSW",state:"NJ",result:"expired",details:"License #NJ-SW-11042, expired 11/2025, Expired"},
+{name:"Maria Santos",cred:"MD, Psychiatry",state:"CT",result:"not_found",details:"No matching record found on CT eLicense Portal"},
+{name:"James Wright",cred:"LPC",state:"FL",result:"under_review",details:"License #FL-MH-29183, Under Investigation by Board"},
+{name:"Anna Lee",cred:"PMHNP-BC",state:"MA",result:"active",details:"License #MA-NP-55721, expires 09/2027, Active"},
+];
+
+const OUTREACH_SCENARIOS=[
+{id:1,candidate:"Sarah Chen, PMHNP-BC",pronouns:"she/her",client:"Sterling Institute",instructions:"Strong match. Standard outreach."},
+{id:2,candidate:"James Rivera, LCSW",pronouns:"he/him",client:"Contemporary Care (FL)",instructions:"Applied through Indeed. Follow up."},
+{id:3,candidate:"Taylor Kim, LPC",pronouns:"they/them",client:"Contemporary Care (NJ)",instructions:"Non-binary candidate. Pronoun accuracy critical."},
+];
+
+const RED_FLAGS=[
+{response:"Hi, thanks for reaching out. I\u2019m interested but my CT license is currently under review by the board. Expecting resolution in 2-3 months.",answer:"escalate",explain:"License under board review is a red flag. Do not advance. Flag for Biruh immediately."},
+{response:"Thank you for contacting me. I\u2019d love to learn more. My availability is Tuesday or Thursday 10am-12pm EST.",answer:"screening",explain:"Clean response. Specific availability. Schedule with Farhaz."},
+{response:"I need to know the salary range before investing time in a call. What are you offering?",answer:"clarify",explain:"Valid question. Direct to screening call for compensation discussion. Escalate to Biruh if unsure."},
+];
+
+const CHECKLIST=["Subject line present","Correct name used","No Dr./MD/DO in your signature","Identified as Healthcare Recruiting Associate, DestaHealth Recruiting","Specific opportunity mentioned","Clear CTA","Pronouns correct","Correct signature block","Under 150 words"];
+
+const SIM_SCENARIOS=[
+{id:1,title:"Your First Candidate",subtitle:"Walk through the full pipeline from resume to handoff.",
+steps:[
+{type:"info",content:"A resume came in through Indeed. Read the profile before making any decisions.",
+profile:{name:"Dr. Karen Nguyen",cred:"MD, Board-Certified Psychiatrist",states:"Connecticut",exp:"10 years outpatient/inpatient. Adult and geriatric. No child/adolescent.",pref:"Open to hybrid or on-site",salary:"Not stated"}},
+{type:"choice",prompt:"Which client is the best match?",
+options:["Sterling Institute","Contemporary Care \u2013 Mental Health","Docs Medical Group \u2013 Primary and Urgent Care","No current client match"],
+answer:"Docs Medical Group \u2013 Primary and Urgent Care",why:"CT license, on-site willing. Sterling requires child/adolescent which she lacks. DOCs is the strongest match."},
+{type:"choice",prompt:"What is your FIRST action?",
+options:["Send outreach email","Enter in ATS as 0 - New Candidate","Verify license on CT eLicense Portal","Forward resume to Farhaz"],
+answer:"Verify license on CT eLicense Portal",why:"License verification first. Always. Before outreach, before ATS, before anything."},
+{type:"info",content:"CT eLicense Portal result: Karen Nguyen, MD \u2014 License #CT-MD-44291, Active, Expires 08/2027. Verified."},
+{type:"choice",prompt:"What ATS status do you assign when you enter her?",
+options:["0 - New Candidate","1 - Initial Screening","2 - DestaHealth Review","8 - Future Pipeline"],
+answer:"0 - New Candidate",why:"She is entering the system for the first time. Every candidate starts at 0 - New Candidate regardless of how qualified they look."},
+{type:"choice",prompt:"Dr. Nguyen responds: 'I need to know about weekend requirements before scheduling a call.' What do you do?",
+options:["Tell her weekends are required and see if she\u2019s still interested","Push for the screening call without answering","Provide the info \u2014 DOCs weekend rotation is in the client criteria","Escalate to Biruh before responding"],
+answer:"Provide the info \u2014 DOCs weekend rotation is in the client criteria",why:"DOCs weekend rotation is documented. Share factual client information so she can make an informed decision."},
+{type:"choice",prompt:"She confirms interest and provides availability. Who coordinates the screening call with Farhaz?",
+options:["You schedule directly with Farhaz","Biruh coordinates \u2014 Month 1 rule","Rylan schedules it","The candidate contacts Farhaz directly"],
+answer:"Biruh coordinates \u2014 Month 1 rule",why:"Month 1: all communication with Farhaz routes through Biruh or the group channel."},
+]},
+{id:2,title:"Something Doesn\u2019t Add Up",subtitle:"Red flags emerge. Test your judgment.",
+steps:[
+{type:"info",content:"You sourced a candidate on LinkedIn. Review the profile.",
+profile:{name:"Dr. Amy Knorr",cred:"Claims: Psychiatrist (MD)",states:"Connecticut",exp:"8 years clinical. LinkedIn: 'Neuropsychiatry Specialist.'",pref:"Hybrid",salary:"Not stated",flag:"Employer: Neurology Associates of Norwalk, CT"}},
+{type:"choice",prompt:"What concerns you?",
+options:["Salary expectations too high","Employer suggests neurology, not psychiatry","Too much experience","LinkedIn headline is unprofessional"],
+answer:"Employer suggests neurology, not psychiatry",why:"'Neurology Associates' and 'neuropsychiatry' suggest she may be a neurologist, not a psychiatrist."},
+{type:"choice",prompt:"What do you do before entering her in the ATS?",
+options:["Enter her and note the concern","Verify specialty on CT eLicense Portal","Send outreach and ask her directly","Disqualify immediately"],
+answer:"Verify specialty on CT eLicense Portal",why:"Verify first. Don\u2019t enter unverified information. Don\u2019t disqualify without checking."},
+{type:"info",content:"CT eLicense Portal: Amy Knorr, MD \u2014 Specialty: Neurology. Board Certified in Neurology. No psychiatry credentials."},
+{type:"choice",prompt:"She is a neurologist. What do you do?",
+options:["Submit to DOCs anyway","Disqualify and delete","Log in Tracker as no current match for future pipeline","Ask Biruh to create a neurology category"],
+answer:"Log in Tracker as no current match for future pipeline",why:"No current client needs neurologists. But don\u2019t delete her. Log in Tracker or assign 8 - Future Pipeline."},
+]},
+{id:3,title:"Friday Pipeline Triage",subtitle:"End of shift. Six candidates need action. Prioritize.",
+steps:[
+{type:"info",content:"Friday, 4:45 PM. 15 minutes before end of shift. Six candidates need decisions. Review each and assign the correct action."},
+{type:"triage",prompt:"Assign the correct action for each candidate.",
+candidates:[
+{name:"Anna Park, PMHNP-BC",situation:"Responded 22 hours ago. You have not replied.",
+options:["Reply now \u2014 24hr window","Wait until Monday","Mark Unresponsive","Escalate"],answer:"Reply now \u2014 24hr window",
+why:"24-hour window expires in 2 hours. Top priority."},
+{name:"David Kim, LCSW",situation:"Resume received this morning. Not reviewed yet.",
+options:["Review and outreach now","Wait until Monday","Disqualify","Escalate"],answer:"Wait until Monday",
+why:"No response window ticking. He submitted the resume. Review Monday."},
+{name:"Maria Santos, MD",situation:"Status: 0 - New Candidate. You realize you never verified her license.",
+options:["Verify now","Wait until Monday","Disqualify","Escalate"],answer:"Verify now",
+why:"Data integrity issue. She should not advance without verification. Takes 2 minutes."},
+{name:"James Wright, LPC",situation:"Farhaz screened and approved Wednesday. Package not sent to Rylan.",
+options:["Send package now","Wait until Monday","Disqualify","Escalate"],answer:"Send package now",
+why:"Approved candidates should not sit. Send the package before you leave."},
+{name:"Rachel Lee, PMHNP",situation:"3 outreach messages over 12 days. No response.",
+options:["Send 4th message","Wait until Monday","Mark Unresponsive","Escalate"],answer:"Mark Unresponsive",
+why:"Three attempts, no response. Mark as Unresponsive. Stop following up."},
+{name:"Tom Chen, DO, Psychiatrist",situation:"New resume. Perfect Sterling match. CT license, 5yr child/adolescent, prefers hybrid.",
+options:["Start full pipeline now","Wait until Monday","Disqualify","Escalate"],answer:"Wait until Monday",
+why:"Strong candidate but nothing time-sensitive. Start fresh Monday with a full shift."},
+]},
+]},
+{id:4,title:"The Mistake",subtitle:"You made an error. How you handle it matters.",
+steps:[
+{type:"info",content:"Tuesday morning. You realize: last Thursday you submitted a candidate to Farhaz without verifying their license. Farhaz screened and approved them Friday. The package has gone to Rylan for client submission."},
+{type:"choice",prompt:"What is your first action?",
+options:["Verify the license now and hope it\u2019s active","Tell Biruh immediately","Tell Farhaz to hold the submission","Delete the ATS entry"],
+answer:"Tell Biruh immediately",why:"Transparency first. Biruh needs to know because an unverified candidate may reach a client."},
+{type:"text",prompt:"Draft a short message to Biruh explaining what happened.",
+hint:"State what happened, when, what the current status is.",
+check:function(v){var l=v.toLowerCase();return v.length>30&&(l.includes("license")||l.includes("verif"))&&(l.includes("did not")||l.includes("didn")||l.includes("forgot")||l.includes("missed")||l.includes("without"))},
+feedback_good:"Direct and honest. State the facts, take ownership.",
+feedback_bad:"Your message should clearly state you submitted without verifying the license."},
+{type:"choice",prompt:"Biruh says verify now. The license is expired. What happens?",
+options:["Submit anyway \u2014 Farhaz approved","Disqualify and notify Biruh, Farhaz, and Rylan","Disqualify quietly","Wait for renewal"],
+answer:"Disqualify and notify Biruh, Farhaz, and Rylan",why:"Expired license cannot be submitted. Notify everyone in the chain so the client submission is stopped."},
+{type:"choice",prompt:"How do you prevent this from happening again?",
+options:["Promise to try harder","Add license verification as first step in your daily checklist","Ask Biruh to verify for you","Only submit candidates Farhaz verified"],
+answer:"Add license verification as first step in your daily checklist",why:"Systems prevent mistakes, not promises. Build verification into your process."},
+]},
+];
+
+/* ========== COMPONENTS ========== */
+const Badge=({text,color=C.blue})=><span style={{background:color,color:C.white,padding:"2px 10px",borderRadius:3,fontSize:12,fontWeight:600,letterSpacing:.5,whiteSpace:"nowrap"}}>{text}</span>;
+const PBar=({current,total})=><div style={{background:C.grayLt,borderRadius:4,height:6,width:"100%",marginTop:8}}><div style={{background:C.bronze,borderRadius:4,height:6,width:`${Math.min(current/total*100,100)}%`,transition:"width .4s"}}/></div>;
+const Score=({score,total,pass})=>{const p=Math.round(score/total*100),ok=p>=pass;return(
+<div style={{background:ok?C.greenLt:C.redLt,border:`2px solid ${ok?C.green:C.red}`,borderRadius:8,padding:24,textAlign:"center",margin:"20px 0"}}>
+<div style={{fontSize:48,fontWeight:700,color:ok?C.green:C.red,fontFamily:"Georgia,serif"}}>{p}%</div>
+<div style={{fontSize:14,color:C.gray,marginTop:4}}>{score} / {total} points</div>
+<div style={{marginTop:12,fontSize:16,fontWeight:600,color:ok?C.green:C.red}}>{ok?"\u2713 PASSED":"\u2717 BELOW THRESHOLD"} \u2014 {pass}% required</div></div>)};
+const Card=({children,style={}})=><div style={{background:C.white,border:`1px solid ${C.grayLt}`,borderRadius:8,padding:20,marginBottom:16,...style}}>{children}</div>;
+const Btn=({children,onClick,variant="primary",disabled=false,style={}})=>{
+const s={primary:{background:C.charcoal,color:C.white},bronze:{background:C.bronze,color:C.white},outline:{background:"transparent",color:C.charcoal,border:`1px solid ${C.charcoal}`},green:{background:C.green,color:C.white}};
+return <button onClick={onClick} disabled={disabled} style={{padding:"10px 24px",borderRadius:6,fontSize:14,fontWeight:600,...s[variant],...style}}>{children}</button>};
+const Header=({onHome,showBack})=>(
+<div style={{borderBottom:`2px solid ${C.bronze}`,padding:"16px 0",marginBottom:32,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+<div style={{display:"flex",alignItems:"center",gap:16}}>
+{showBack&&<button onClick={onHome} style={{background:"transparent",color:C.bronze,fontSize:13,fontWeight:600,padding:"6px 14px",borderRadius:4,border:`1px solid ${C.bronze}`}}>{"\u2190"} Dashboard</button>}
+<div style={{cursor:"pointer"}} onClick={onHome}>
+<div style={{fontFamily:"Georgia,serif",fontSize:18,letterSpacing:4,color:C.charcoal,lineHeight:1.2}}>D E S T A</div>
+<div style={{fontFamily:"Georgia,serif",fontSize:18,letterSpacing:4,color:C.bronze,lineHeight:1.2}}>W O R K S</div></div></div>
+<div style={{textAlign:"right"}}><div style={{fontSize:13,color:C.blue,fontWeight:600}}>Desta University</div>
+<div style={{fontSize:12,color:C.gray}}>Week 1 Interactive Training</div></div></div>);
+const Foot=()=>(
+<div style={{borderTop:`1px solid ${C.bronze}`,marginTop:40,paddingTop:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<div style={{fontSize:11,color:C.gray}}>Developed by Desta Works, Addis Ababa, Ethiopia</div>
+<div style={{fontFamily:"Georgia,serif",fontSize:12,letterSpacing:3,color:C.charcoal}}>DESTA WORKS</div></div>);
+
+/* ========== M1: Healthcare Knowledge ========== */
+function M1({onComplete}){
+const[ex,setEx]=useState(0);const[ma,setMa]=useState({});const[ca,setCa]=useState({});const[sf,setSf]=useState({});
+const[ms,setMs]=useState(null);const[cs,setCs]=useState(null);
+const[fa,setFa]=useState({});const[ffb,setFfb]=useState({});const[fs,setFs]=useState(null);
+const types=["prescriber","therapist","support"];
+const scoreM=()=>{let c=0;LICENSE_DATA.forEach(l=>{if(ma[l.abbr]===l.type)c++});setMs(c);setEx(1);window.scrollTo(0,0)};
+const scoreC=()=>{let c=0;CANDIDATES.forEach(d=>{const a=ca[d.id]||{};if(a.client===d.answer.client)c++;if((a.q==="yes"&&d.answer.qualifies===true)||(a.q==="no"&&d.answer.qualifies===false)||(a.q==="conditional"&&d.answer.qualifies==="conditional"))c++});setCs(c);setEx(2);window.scrollTo(0,0)};
+const chkF=(i)=>{const v=(fa[i]||"").trim().toLowerCase();const ok=FILL_BLANKS[i].accepts.some(a=>v.includes(a.toLowerCase()));setFfb(p=>({...p,[i]:{ok,answer:FILL_BLANKS[i].answer}}))};
+const scoreF=()=>{let c=0;FILL_BLANKS.forEach((f,i)=>{if(ffb[i]&&ffb[i].ok)c++});setFs(c);setEx(3);window.scrollTo(0,0)};
+const ts=(ms||0)+(cs||0)+(fs||0),tp=33;
+
+if(ex===0)return(<div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 1A: License Classification</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:20}}>Classify each credential as <strong>Prescriber</strong>, <strong>Therapist</strong>, or <strong>Support</strong>.</p>
+<PBar current={Object.keys(ma).length} total={13}/>
+<div style={{marginTop:20}}>{LICENSE_DATA.map(l=>(
+<Card key={l.abbr} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:16,flexWrap:"wrap",gap:10}}>
+<div style={{minWidth:200}}><div style={{fontWeight:700,fontSize:16}}>{l.abbr}</div><div style={{fontSize:13,color:C.gray}}>{l.full}</div></div>
+<div style={{display:"flex",gap:8}}>{types.map(t=>(
+<button key={t} onClick={()=>setMa(p=>({...p,[l.abbr]:t}))} style={{padding:"6px 16px",borderRadius:4,fontSize:13,fontWeight:600,background:ma[l.abbr]===t?(t==="prescriber"?C.blue:t==="therapist"?C.purple:C.orange):"transparent",color:ma[l.abbr]===t?C.white:C.gray,border:`1px solid ${ma[l.abbr]===t?"transparent":C.grayLt}`}}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>
+))}</div></Card>))}</div>
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={scoreM} disabled={Object.keys(ma).length<13}>Score & Continue →</Btn></div></div>);
+
+if(ex===1)return(<div>
+<div style={{background:C.greenLt,border:`1px solid ${C.green}`,borderRadius:8,padding:16,marginBottom:24}}><strong>Exercise 1A:</strong> {ms}/13 ({Math.round(ms/13*100)}%)</div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 1B: Candidate-Client Matching</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:20}}>Select the best client match and whether each candidate qualifies.</p>
+{CANDIDATES.map(c=>(
+<Card key={c.id} style={{borderLeft:`4px solid ${C.blue}`}}>
+<div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}><div><div style={{fontWeight:700,fontSize:16}}>{c.name}</div><div style={{fontSize:13,color:C.gray}}>{c.cred} \u2014 {c.states.join(", ")}</div></div><Badge text={c.salary} color={C.gray}/></div>
+<div style={{fontSize:13,marginTop:8}}><strong>Experience:</strong> {c.exp}<br/><strong>Preference:</strong> {c.pref}</div>
+<div style={{display:"flex",gap:16,marginTop:12,flexWrap:"wrap"}}>
+<div style={{flex:1,minWidth:200}}><label style={{fontSize:12,fontWeight:600,color:C.gray,display:"block",marginBottom:4}}>Best Client Match</label>
+<select value={ca[c.id]?.client||""} onChange={e=>setCa(p=>({...p,[c.id]:{...p[c.id],client:e.target.value}}))} style={{width:"100%",padding:8,borderRadius:4,border:`1px solid ${C.grayLt}`,fontSize:14}}>
+<option value="">Select...</option>{CLIENT_NAMES.map(cl=><option key={cl} value={cl}>{cl}</option>)}</select></div>
+<div style={{flex:1,minWidth:200}}><label style={{fontSize:12,fontWeight:600,color:C.gray,display:"block",marginBottom:4}}>Qualifies?</label>
+<div style={{display:"flex",gap:6}}>{[["yes","Yes",C.green],["conditional","Conditional",C.orange],["no","No",C.red]].map(([v,l,cl])=>(
+<button key={v} onClick={()=>setCa(p=>({...p,[c.id]:{...p[c.id],q:v}}))} style={{flex:1,padding:"8px 0",borderRadius:4,fontSize:13,fontWeight:600,background:ca[c.id]?.q===v?cl:"transparent",color:ca[c.id]?.q===v?C.white:C.gray,border:`1px solid ${ca[c.id]?.q===v?"transparent":C.grayLt}`}}>{l}</button>
+))}</div></div></div>
+{!sf[c.id]?<div style={{marginTop:12,textAlign:"right"}}><Btn variant="outline" onClick={()=>setSf(p=>({...p,[c.id]:true}))} style={{fontSize:12,padding:"6px 16px"}}>Check</Btn></div>
+:<div style={{marginTop:12,background:C.ivory,borderRadius:6,padding:12,fontSize:13}}><strong>Correct:</strong> {c.answer.client} \u2014 {c.answer.qualifies===true?"Yes":c.answer.qualifies===false?"No":"Conditional"}<br/><span style={{color:C.gray}}>{c.answer.notes}</span></div>}
+</Card>))}
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={scoreC}>Score & Continue →</Btn></div></div>);
+
+if(ex===2)return(<div>
+<div style={{background:C.greenLt,border:`1px solid ${C.green}`,borderRadius:8,padding:16,marginBottom:24}}><strong>1A:</strong> {ms}/13 &nbsp; <strong>1B:</strong> {cs}/10</div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 1C: Fill in the Blanks</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:20}}>Complete each statement. The key concept matters more than exact spelling.</p>
+<PBar current={Object.keys(ffb).length} total={10}/>
+<div style={{marginTop:20}}>{FILL_BLANKS.map((f,i)=>(
+<Card key={i} style={{borderLeft:ffb[i]?("4px solid "+(ffb[i].ok?C.green:C.red)):("4px solid "+C.grayLt)}}>
+<div style={{fontSize:15,lineHeight:1.7,marginBottom:10}}>
+{f.prompt.split("_______").map((part,pi,arr)=>(
+<span key={pi}>{part}{pi<arr.length-1&&(
+<span style={{display:"inline-block",minWidth:160,borderBottom:"2px solid "+(ffb[i]?(ffb[i].ok?C.green:C.red):C.bronze),margin:"0 4px"}}>
+{ffb[i]?<span style={{fontWeight:700,color:ffb[i].ok?C.green:C.red,fontSize:14,padding:"0 4px"}}>{ffb[i].ok?(fa[i]||""):ffb[i].answer}</span>
+:<input value={fa[i]||""} onChange={e=>setFa(p=>({...p,[i]:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"&&fa[i])chkF(i)}}
+style={{border:"none",background:"transparent",fontSize:15,fontWeight:600,color:C.charcoal,width:"100%",outline:"none",padding:"2px 4px"}} placeholder="type answer..."/>}
+</span>)}</span>))}</div>
+{fa[i]&&!ffb[i]&&<div style={{textAlign:"right"}}><Btn variant="outline" onClick={()=>chkF(i)} style={{fontSize:12,padding:"6px 14px"}}>Check</Btn></div>}
+{ffb[i]&&<div style={{marginTop:8,padding:10,borderRadius:6,background:ffb[i].ok?C.greenLt:C.redLt,fontSize:13}}>
+{ffb[i].ok?<strong style={{color:C.green}}>{"\u2713"} Correct!</strong>:<span><strong style={{color:C.red}}>{"\u2717"}</strong> Answer: <strong>{ffb[i].answer}</strong></span>}</div>}
+</Card>))}</div>
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={scoreF} disabled={Object.keys(ffb).length<10}>Score & See Results →</Btn></div></div>);
+
+return(<div><h2 style={{color:C.charcoal,fontSize:22,marginBottom:16}}>Module 1 Results</h2>
+<Score score={ts} total={tp} pass={80}/>
+<Card><strong>1A:</strong> {ms}/13 &nbsp; <strong>1B:</strong> {cs}/10 &nbsp; <strong>1C:</strong> {fs}/10</Card>
+<div style={{textAlign:"right",marginTop:16}}><Btn variant="bronze" onClick={()=>onComplete(ts,tp)}>Complete Module 1 →</Btn></div></div>);
+}
+
+/* ========== M2: ATS Simulator (Real Data) ========== */
+function M2({onComplete}){
+const[ex,setEx]=useState(0);
+const[sa,setSa]=useState({});const[sf,setSf]=useState({});
+const[formVals,setFV]=useState({});const[formChecked,setFC]=useState(false);const[formScore,setFormScore]=useState(null);
+const[es,setEs]=useState({});const[ef,setEf]=useState({});
+const[s1,setS1]=useState(null);const[s2,setS2]=useState(null);const[s3,setS3]=useState(null);
+
+const chkS=(i)=>{const ok=sa[i]===ATS_SCENARIOS[i].answer;setSf(p=>({...p,[i]:{ok,a:ATS_SCENARIOS[i].answer,w:ATS_SCENARIOS[i].why}}))};
+const score1=()=>{let c=0;ATS_SCENARIOS.forEach((s,i)=>{if(sa[i]===s.answer)c++});setS1(c);setEx(1);window.scrollTo(0,0)};
+const scoreForm=()=>{let c=0;ATS_FORM_FIELDS.forEach((f,i)=>{if(f.type==="select"){if(formVals[f.field]===f.answer)c++}else{if(f.check&&f.check(formVals[f.field]||""))c++}});setFormScore(c);setS2(c);setFC(true)};
+const goToErrors=()=>{setEx(2);window.scrollTo(0,0)};
+const togE=(pi,f)=>setEs(p=>{const c=p[pi]||[];return{...p,[pi]:c.includes(f)?c.filter(x=>x!==f):[...c,f]}});
+const chkE=(pi)=>{const sel=es[pi]||[];const cor=ATS_PROFILE_ERRORS[pi].fields;const h=sel.filter(f=>cor.includes(f)).length;setEf(p=>({...p,[pi]:{h,errs:ATS_PROFILE_ERRORS[pi].errors}}))};
+const score3=()=>{let s=0;ATS_PROFILE_ERRORS.forEach((p,i)=>{if(ef[i])s+=ef[i].h});setS3(s);setEx(3);window.scrollTo(0,0)};
+const tep=ATS_PROFILE_ERRORS.reduce((s,p)=>s+p.fields.length,0);
+const ts=(s1||0)+(s2||0)+(s3||0),tp=10+11+tep;
+
+if(ex===0)return(<div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 2A: ATS Pipeline Statuses</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:12}}>The DestaHealth ATS (SharePoint Applicant Tracker) uses numbered statuses to track where each candidate is in the hiring process.</p>
+<Card style={{borderLeft:"4px solid "+C.blue,background:C.blueLt}}>
+<div style={{fontWeight:700,fontSize:15,marginBottom:12}}>The 9 Pipeline Statuses</div>
+<div style={{display:"grid",gap:6}}>{REAL_STATUSES.map((s,i)=>{
+const colors=["#60a5fa","#93c5fd","#fde68a","#86efac","#fcd34d","#4ade80","#34d399","#fca5a5","#c4b5fd"];
+return <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+<span style={{background:colors[i],padding:"4px 10px",borderRadius:4,fontSize:13,fontWeight:600,minWidth:240}}>{s}</span>
+<span style={{fontSize:12,color:C.gray}}>{["Resume received, not reviewed","Farhaz is screening","Rylan/team reviewing internally","Client evaluating candidate","Salary/schedule negotiation","Candidate accepted offer","Placed and started","Rejected by client, try another","No current match, keep for later"][i]}</span>
+</div>})}</div>
+</Card>
+<p style={{color:C.gray,fontSize:14,marginBottom:16,marginTop:16}}>For each scenario, select the correct status.</p>
+<PBar current={Object.keys(sf).length} total={10}/>
+<div style={{marginTop:16}}>{ATS_SCENARIOS.map((s,i)=>(
+<Card key={i} style={{borderLeft:sf[i]?("4px solid "+(sf[i].ok?C.green:C.red)):("4px solid "+C.grayLt)}}>
+<div style={{fontSize:14,marginBottom:10}}><strong>Scenario {i+1}:</strong> {s.scenario}</div>
+<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+<select value={sa[i]||""} onChange={e=>setSa(p=>({...p,[i]:e.target.value}))} disabled={!!sf[i]} style={{padding:8,borderRadius:4,border:`1px solid ${C.grayLt}`,fontSize:13,minWidth:220}}>
+<option value="">Select status...</option>{REAL_STATUSES.map(o=><option key={o} value={o}>{o}</option>)}</select>
+{!sf[i]&&sa[i]&&<Btn variant="outline" onClick={()=>chkS(i)} style={{fontSize:12,padding:"6px 14px"}}>Check</Btn>}
+</div>
+{sf[i]&&<div style={{marginTop:10,fontSize:13,color:sf[i].ok?C.green:C.red}}>{sf[i].ok?"\u2713 Correct":"\u2717 Correct: "+sf[i].a}<div style={{color:C.gray,marginTop:2}}>{sf[i].w}</div></div>}
+</Card>))}</div>
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score1} disabled={Object.keys(sf).length<10}>Score & Continue →</Btn></div></div>);
+
+if(ex===1)return(<div>
+<div style={{background:C.greenLt,border:"1px solid "+C.green,borderRadius:8,padding:16,marginBottom:24}}><strong>Exercise 2A:</strong> {s1}/10</div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 2B: Add a New Candidate</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:12}}>A resume just arrived. Fill in the ATS form fields exactly as they should appear in the system.</p>
+<Card style={{borderLeft:"4px solid "+C.blue,background:C.blueLt}}>
+<div style={{fontWeight:700,fontSize:15,marginBottom:8}}>Candidate Information (from resume)</div>
+<div style={{fontSize:14,lineHeight:1.7}}>
+<strong>Jennifer Martinez, PMHNP-BC</strong><br/>
+Hartford, CT | j.martinez.np@gmail.com | (860) 442-7831<br/>
+Salary expectation: $145,000 | Found on Indeed<br/>
+Best client match: Sterling Institute | You are the assigned recruiter
+</div></Card>
+<div style={{marginTop:16}}>{ATS_FORM_FIELDS.map((f,i)=>{
+const isOk=formChecked&&(f.type==="select"?formVals[f.field]===f.answer:f.check&&f.check(formVals[f.field]||""));
+const isWrong=formChecked&&!isOk;
+return <div key={i} style={{marginBottom:12}}>
+<label style={{fontSize:12,fontWeight:600,color:C.gray,display:"block",marginBottom:4}}>{f.field}</label>
+{f.type==="select"?(
+<select value={formVals[f.field]||""} onChange={e=>setFV(p=>({...p,[f.field]:e.target.value}))} disabled={formChecked}
+style={{width:"100%",padding:10,borderRadius:6,border:"1px solid "+(isOk?C.green:isWrong?C.red:C.grayLt),fontSize:14,background:isOk?C.greenLt:isWrong?C.redLt:C.white}}>
+<option value="">Select...</option>{f.options.map(o=><option key={o} value={o}>{o}</option>)}</select>
+):(
+<input value={formVals[f.field]||""} onChange={e=>setFV(p=>({...p,[f.field]:e.target.value}))} disabled={formChecked}
+placeholder={"Enter "+f.field.toLowerCase()+"..."}
+style={{width:"100%",padding:10,borderRadius:6,border:"1px solid "+(isOk?C.green:isWrong?C.red:C.grayLt),fontSize:14,background:isOk?C.greenLt:isWrong?C.redLt:C.white}}/>
+)}
+{formChecked&&isWrong&&<div style={{fontSize:12,color:C.red,marginTop:2}}>Expected: {f.answer}</div>}
+</div>})}</div>
+{!formChecked?<div style={{textAlign:"right"}}><Btn onClick={scoreForm}>Score Form →</Btn></div>
+:<div><div style={{background:formScore>=9?C.greenLt:C.orangeLt,borderRadius:8,padding:16,marginBottom:16}}><strong>Form Score:</strong> {formScore}/{ATS_FORM_FIELDS.length} fields correct</div>
+<div style={{textAlign:"right"}}><Btn onClick={goToErrors}>Continue to Error Detection →</Btn></div></div>}
+</div>);
+
+if(ex===2)return(<div>
+<div style={{background:C.greenLt,border:"1px solid "+C.green,borderRadius:8,padding:16,marginBottom:24}}><strong>2A:</strong> {s1}/10 &nbsp; <strong>2B:</strong> {s2}/11</div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 2C: Error Detection</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:20}}>Each ATS entry has errors. Click the field(s) that are wrong.</p>
+{ATS_PROFILE_ERRORS.map((p,i)=>(
+<Card key={i} style={{borderLeft:ef[i]?("4px solid "+C.green):("4px solid "+C.grayLt)}}>
+<div style={{fontWeight:600,marginBottom:10}}>Entry {String.fromCharCode(65+i)}</div>
+<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{Object.entries(p.profile).map(([f,v])=>(
+<button key={f} onClick={()=>!ef[i]&&togE(i,f)} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:ef[i]?"default":"pointer",
+background:es[i]?.includes(f)?(ef[i]?(p.fields.includes(f)?C.greenLt:C.redLt):C.orangeLt):(ef[i]&&p.fields.includes(f)?C.redLt:C.white),
+border:"1px solid "+(es[i]?.includes(f)?C.orange:C.grayLt)}}>
+<span style={{fontSize:10,color:C.gray,display:"block"}}>{f}</span><span style={{fontWeight:600}}>{v||"(blank)"}</span></button>
+))}</div>
+{!ef[i]?<div style={{marginTop:10,textAlign:"right"}}><Btn variant="outline" onClick={()=>chkE(i)} style={{fontSize:12,padding:"6px 14px"}}>Check</Btn></div>
+:<div style={{marginTop:10,fontSize:13,background:C.ivory,borderRadius:6,padding:10}}>{ef[i].errs.map((e,j)=><div key={j}>{"\u2022"} {e}</div>)}</div>}
+</Card>))}
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score3} disabled={Object.keys(ef).length<5}>Score & See Results →</Btn></div></div>);
+
+return(<div><h2 style={{color:C.charcoal,fontSize:22,marginBottom:16}}>Module 2 Results</h2>
+<Score score={ts} total={tp} pass={80}/>
+<Card><strong>2A (Statuses):</strong> {s1}/10 &nbsp; <strong>2B (New Entry):</strong> {s2}/11 &nbsp; <strong>2C (Errors):</strong> {s3}/{tep}</Card>
+<div style={{textAlign:"right",marginTop:16}}><Btn variant="bronze" onClick={()=>onComplete(ts,tp)}>Complete Module 2 →</Btn></div></div>);
+}
+
+/* ========== M3: Resume Conversion ========== */
+function M3({onComplete}){
+const[ex,setEx]=useState(0);const[ans,setAns]=useState({});const[fb,setFb]=useState({});
+const[ma,setMa]=useState({});const[mfb,setMfb]=useState({});const[s1,setS1]=useState(null);const[s2,setS2]=useState(null);
+const chk=(i)=>{const item=RESUME_ITEMS[i];const ok=(ans[i]==="ok"&&item.ok)||(ans[i]==="notok"&&!item.ok);setFb(p=>({...p,[i]:{ok,explain:item.explain}}))};
+const score1=()=>{let c=0;RESUME_ITEMS.forEach((r,i)=>{if(fb[i]&&fb[i].ok)c++});setS1(c);setEx(1);window.scrollTo(0,0)};
+const chkM=(i)=>{setMfb(p=>({...p,[i]:true}))};
+const score2=()=>{let c=0;RESUME_MISTAKES.forEach((r,i)=>{if(mfb[i])c++});setS2(c);setEx(2);window.scrollTo(0,0)};
+const ts=(s1||0)+(s2||0),tp=17;
+
+if(ex===0)return(<div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:12}}>The One Rule of Resume Conversion</h2>
+<Card style={{borderLeft:"4px solid "+C.red,background:C.redLt}}>
+<div style={{fontWeight:700,fontSize:16,marginBottom:8}}>Never change what the candidate said. Only change how it looks.</div>
+<div style={{fontSize:14,lineHeight:1.7}}>When you convert a resume into the DestaHealth template, you change appearance: fonts, layout, spacing, capitalization. You do not change content: names, dates, employers, credentials, degrees, or any other fact.<br/><br/>If something looks wrong \u2014 flag it for Biruh. Do not fix it yourself.</div></Card>
+<div style={{marginTop:16,marginBottom:24}}>
+<Card style={{background:C.greenLt,borderLeft:"4px solid "+C.green}}><div style={{fontWeight:600,fontSize:14,marginBottom:6,color:C.green}}>OK to change:</div><div style={{fontSize:13}}>Fonts, sizes, bold/italic, bullets, capitalization, typo fixes in standard credential titles, changing "to" to a dash</div></Card>
+<Card style={{background:C.redLt,borderLeft:"4px solid "+C.red,marginTop:8}}><div style={{fontWeight:600,fontSize:14,marginBottom:6,color:C.red}}>Never change:</div><div style={{fontSize:13}}>Employer names, school names, dates (do not add months), job titles, license numbers, credentials, states. Never add content.</div></Card></div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 3A: Can You Change This?</h2>
+<PBar current={Object.keys(fb).length} total={12}/>
+<div style={{marginTop:16}}>{RESUME_ITEMS.map((r,i)=>(
+<Card key={i} style={{borderLeft:fb[i]?("4px solid "+(fb[i].ok?C.green:C.red)):("4px solid "+C.grayLt)}}>
+<div style={{fontWeight:600,fontSize:14,marginBottom:8}}>{r.field}</div>
+<div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
+<div style={{flex:1,minWidth:180,background:C.ivory,padding:10,borderRadius:6,fontSize:14}}><div style={{fontSize:11,fontWeight:600,color:C.gray,marginBottom:4}}>ORIGINAL</div>{r.before}</div>
+<div style={{flex:1,minWidth:180,background:C.blueLt,padding:10,borderRadius:6,fontSize:14}}><div style={{fontSize:11,fontWeight:600,color:C.gray,marginBottom:4}}>CONVERTED</div>{r.after}</div></div>
+<div style={{display:"flex",gap:8}}>
+<button onClick={()=>!fb[i]&&setAns(p=>({...p,[i]:"ok"}))} disabled={!!fb[i]} style={{flex:1,padding:"10px 0",borderRadius:6,fontSize:14,fontWeight:600,background:ans[i]==="ok"?C.green:"transparent",color:ans[i]==="ok"?C.white:C.gray,border:"1px solid "+(ans[i]==="ok"?"transparent":C.grayLt)}}>OK to Change</button>
+<button onClick={()=>!fb[i]&&setAns(p=>({...p,[i]:"notok"}))} disabled={!!fb[i]} style={{flex:1,padding:"10px 0",borderRadius:6,fontSize:14,fontWeight:600,background:ans[i]==="notok"?C.red:"transparent",color:ans[i]==="notok"?C.white:C.gray,border:"1px solid "+(ans[i]==="notok"?"transparent":C.grayLt)}}>Not OK \u2014 Changes the Facts</button></div>
+{ans[i]&&!fb[i]&&<div style={{marginTop:8,textAlign:"right"}}><Btn variant="outline" onClick={()=>chk(i)} style={{fontSize:12,padding:"6px 14px"}}>Check</Btn></div>}
+{fb[i]&&<div style={{marginTop:10,padding:10,borderRadius:6,background:fb[i].ok?C.greenLt:C.redLt,fontSize:13,lineHeight:1.6}}>
+<strong>{fb[i].ok?"\u2713 Correct":"\u2717 Incorrect"}</strong><br/>{fb[i].explain}</div>}
+</Card>))}</div>
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score1} disabled={Object.keys(fb).length<12}>Score & Continue →</Btn></div></div>);
+
+if(ex===1)return(<div>
+<div style={{background:C.greenLt,border:"1px solid "+C.green,borderRadius:8,padding:16,marginBottom:24}}><strong>3A:</strong> {s1}/12</div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 3B: Find the Mistakes</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:20}}>Someone converted a resume but made mistakes. Explain what went wrong.</p>
+{RESUME_MISTAKES.map((r,i)=>(
+<Card key={i} style={{borderLeft:mfb[i]?("4px solid "+C.green):("4px solid "+C.red)}}>
+<div style={{fontWeight:600,fontSize:14,marginBottom:8}}>{r.field}</div>
+<div style={{display:"flex",gap:12,marginBottom:10,flexWrap:"wrap"}}>
+<div style={{flex:1,minWidth:180,background:C.greenLt,padding:10,borderRadius:6,fontSize:14}}><div style={{fontSize:11,fontWeight:600,color:C.green,marginBottom:4}}>ORIGINAL</div>{r.original}</div>
+<div style={{flex:1,minWidth:180,background:C.redLt,padding:10,borderRadius:6,fontSize:14}}><div style={{fontSize:11,fontWeight:600,color:C.red,marginBottom:4}}>CONVERTED (error)</div>{r.converted}</div></div>
+{!mfb[i]?<div style={{display:"flex",gap:8}}><input placeholder="What is wrong?" value={ma[i]||""} onChange={e=>setMa(p=>({...p,[i]:e.target.value}))} style={{flex:1,padding:10,borderRadius:6,border:"1px solid "+C.grayLt,fontSize:13}}/><Btn variant="outline" onClick={()=>chkM(i)} disabled={!ma[i]} style={{fontSize:12,padding:"8px 16px"}}>Check</Btn></div>
+:<div style={{padding:10,borderRadius:6,background:C.ivory,fontSize:13}}><strong>Answer:</strong> {r.explain}</div>}
+</Card>))}
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score2} disabled={Object.keys(mfb).length<5}>Score & See Results →</Btn></div></div>);
+
+return(<div><h2 style={{color:C.charcoal,fontSize:22,marginBottom:16}}>Module 3 Results</h2>
+<Score score={ts} total={tp} pass={80}/>
+<Card><strong>3A:</strong> {s1}/12 &nbsp; <strong>3B:</strong> {s2}/5</Card>
+<div style={{textAlign:"right",marginTop:16}}><Btn variant="bronze" onClick={()=>onComplete(ts,tp)}>Complete Module 3 →</Btn></div></div>);
+}
+
+/* ========== M4: Sourcing ========== */
+function M4({onComplete}){
+const[ex,setEx]=useState(0);const[bv,setBv]=useState({});const[bf,setBf]=useState({});
+const[va,setVa]=useState({});const[vf,setVf]=useState({});const[s1,setS1]=useState(null);const[s2,setS2]=useState(null);
+const scoreBool=(i)=>{const val=bv[i]||"";const ok=val.includes("AND")||val.includes("OR")||val.includes('"');setBf(p=>({...p,[i]:{ok,sample:BOOLEAN_EXERCISES[i].sample}}))};
+const score1=()=>{let c=0;Object.values(bf).forEach(f=>{if(f.ok)c+=2});setS1(c);setEx(1);window.scrollTo(0,0)};
+const chkV=(i)=>{const c=VERIFY_CANDIDATES[i];const ok=(c.result==="active"&&va[i]==="advance")||(c.result==="expired"&&va[i]==="disqualify")||(c.result==="not_found"&&va[i]==="escalate")||(c.result==="under_review"&&va[i]==="escalate");
+setVf(p=>({...p,[i]:{ok,result:c.result}}))};
+const score2=()=>{let c=0;Object.values(vf).forEach(f=>{if(f.ok)c+=2});setS2(c);setEx(2);window.scrollTo(0,0)};
+const ts=(s1||0)+(s2||0),tp=20;
+
+if(ex===0)return(<div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 4A: Boolean Search Strings</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:16}}>Boolean search uses special operators to find specific candidates on Indeed and LinkedIn.</p>
+<Card style={{borderLeft:"4px solid "+C.blue,background:C.blueLt}}>
+<div style={{fontWeight:700,fontSize:15,marginBottom:12}}>How Boolean Search Works</div>
+<div style={{marginBottom:10}}><strong>AND</strong> \u2014 both terms must appear<br/><code style={{background:C.white,padding:"2px 8px",borderRadius:3}}>PMHNP AND Connecticut</code></div>
+<div style={{marginBottom:10}}><strong>OR</strong> \u2014 either term works<br/><code style={{background:C.white,padding:"2px 8px",borderRadius:3}}>psychiatrist OR PMHNP</code></div>
+<div style={{marginBottom:10}}><strong>"Quotes"</strong> \u2014 exact phrase<br/><code style={{background:C.white,padding:"2px 8px",borderRadius:3}}>"private practice" AND "New Jersey"</code></div>
+<div style={{marginBottom:10}}><strong>( Parentheses )</strong> \u2014 group terms<br/><code style={{background:C.white,padding:"2px 8px",borderRadius:3}}>(MD OR DO) AND psychiatry AND Connecticut</code></div>
+<div><strong>Full example:</strong><br/><code style={{background:C.white,padding:"4px 10px",borderRadius:3,display:"inline-block"}}>(PMHNP OR "nurse practitioner") AND (Connecticut OR "New York") AND outpatient</code></div>
+</Card>
+<p style={{color:C.gray,fontSize:14,marginBottom:16,marginTop:16}}>Write a Boolean search string for each prompt.</p>
+{BOOLEAN_EXERCISES.map((b,i)=>(
+<Card key={i} style={{borderLeft:bf[i]?("4px solid "+(bf[i].ok?C.green:C.orange)):("4px solid "+C.grayLt)}}>
+<div style={{fontWeight:600,fontSize:14,marginBottom:8}}>{b.prompt}</div>
+<input value={bv[i]||""} onChange={e=>setBv(p=>({...p,[i]:e.target.value}))} disabled={!!bf[i]} placeholder="Type Boolean search..."
+style={{width:"100%",padding:8,borderRadius:4,border:"1px solid "+C.grayLt,fontSize:13,fontFamily:"monospace"}}/>
+{bv[i]&&!bf[i]&&<div style={{marginTop:8,textAlign:"right"}}><Btn variant="outline" onClick={()=>scoreBool(i)} style={{fontSize:12,padding:"6px 14px"}}>Check</Btn></div>}
+{bf[i]&&<div style={{marginTop:8,fontSize:13}}><span style={{color:bf[i].ok?C.green:C.orange}}>{bf[i].ok?"\u2713 Valid operators":"\u2717 Missing operators (AND, OR, quotes)"}</span>
+<div style={{color:C.gray,marginTop:4}}>Sample: <code style={{background:C.ivory,padding:"2px 6px",borderRadius:3}}>{bf[i].sample}</code></div></div>}
+</Card>))}
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score1} disabled={Object.keys(bf).length<5}>Score & Continue →</Btn></div></div>);
+
+if(ex===1)return(<div>
+<div style={{background:C.greenLt,border:"1px solid "+C.green,borderRadius:8,padding:16,marginBottom:24}}><strong>4A:</strong> {s1}/10</div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 4B: License Verification</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:20}}>You searched state board sites. Decide the next action for each.</p>
+{VERIFY_CANDIDATES.map((c,i)=>(
+<Card key={i} style={{borderLeft:vf[i]?("4px solid "+(vf[i].ok?C.green:C.red)):("4px solid "+C.grayLt)}}>
+<div style={{fontWeight:700,fontSize:15}}>{c.name}</div>
+<div style={{fontSize:13,color:C.gray,marginBottom:8}}>Claims: {c.cred} in {c.state}</div>
+<div style={{fontSize:13,background:C.ivory,padding:8,borderRadius:4,marginBottom:10}}><strong>Result:</strong> {c.details}</div>
+<div style={{display:"flex",gap:8}}>{[["advance","Advance",C.green],["disqualify","Disqualify",C.red],["escalate","Escalate to Biruh",C.orange]].map(([v,l,cl])=>(
+<button key={v} onClick={()=>!vf[i]&&setVa(p=>({...p,[i]:v}))} disabled={!!vf[i]}
+style={{flex:1,padding:"8px 0",borderRadius:4,fontSize:13,fontWeight:600,background:va[i]===v?cl:"transparent",color:va[i]===v?C.white:C.gray,border:"1px solid "+(va[i]===v?"transparent":C.grayLt)}}>{l}</button>))}</div>
+{va[i]&&!vf[i]&&<div style={{marginTop:8,textAlign:"right"}}><Btn variant="outline" onClick={()=>chkV(i)} style={{fontSize:12,padding:"6px 14px"}}>Check</Btn></div>}
+{vf[i]&&<div style={{marginTop:8,fontSize:13,color:vf[i].ok?C.green:C.red}}>{vf[i].ok?"\u2713 Correct":"\u2717 Incorrect"} \u2014 {vf[i].result==="active"?"Active license. Safe to advance.":vf[i].result==="expired"?"Expired. Disqualify.":vf[i].result==="not_found"?"Not found. Escalate.":"Under investigation. Escalate immediately."}</div>}
+</Card>))}
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score2} disabled={Object.keys(vf).length<5}>Score & See Results →</Btn></div></div>);
+
+return(<div><h2 style={{color:C.charcoal,fontSize:22,marginBottom:16}}>Module 4 Results</h2>
+<Score score={ts} total={tp} pass={80}/>
+<Card><strong>4A:</strong> {s1}/10 &nbsp; <strong>4B:</strong> {s2}/10</Card>
+<div style={{textAlign:"right",marginTop:16}}><Btn variant="bronze" onClick={()=>onComplete(ts,tp)}>Complete Module 4 →</Btn></div></div>);
+}
+
+/* ========== M5: Outreach ========== */
+function M5({onComplete}){
+const[ex,setEx]=useState(0);const[emails,setEmails]=useState({});const[checks,setChecks]=useState({});const[eScores,setEScores]=useState({});
+const[ra,setRa]=useState({});const[rf,setRf]=useState({});const[s1,setS1]=useState(null);const[s2,setS2]=useState(null);
+const chkE=(id)=>{const e=emails[id]||{};const ck=checks[id]||[];let s=0;
+if(e.subject&&e.subject.trim().length>5)s++;if(e.body&&e.body.trim().length>50)s+=2;
+if(e.body&&!e.body.includes("Dr.")&&!e.body.includes("MD,"))s++;
+const sc=OUTREACH_SCENARIOS.find(x=>x.id===id);
+if(sc.pronouns==="they/them"&&e.body){if(e.body.includes("they")||e.body.includes("their"))s++}else s++;
+if(ck.length>=6)s+=2;setEScores(p=>({...p,[id]:{s,m:7}}))};
+const score1=()=>{let t=0;Object.values(eScores).forEach(s=>t+=s.s);setS1(t);setEx(1);window.scrollTo(0,0)};
+const chkR=(i)=>{const ok=ra[i]===RED_FLAGS[i].answer;setRf(p=>({...p,[i]:{ok,exp:RED_FLAGS[i].explain}}))};
+const score2=()=>{let c=0;RED_FLAGS.forEach((r,i)=>{if(ra[i]===r.answer)c+=2});setS2(c);setEx(2);window.scrollTo(0,0)};
+const ts=(s1||0)+(s2||0),tp=27;
+
+if(ex===0)return(<div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 5A: Outreach Email Drafts</h2>
+<p style={{color:C.gray,fontSize:14,marginBottom:20}}>Draft outreach emails. Complete self-check before scoring.</p>
+{OUTREACH_SCENARIOS.map(s=>(
+<Card key={s.id} style={{borderLeft:eScores[s.id]?("4px solid "+C.green):("4px solid "+C.blue)}}>
+<div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:10}}>
+<div><div style={{fontWeight:700,fontSize:15}}>{s.candidate} <span style={{color:C.gray,fontWeight:400}}>({s.pronouns})</span></div>
+<div style={{fontSize:13,color:C.gray}}>{s.client} \u2014 {s.instructions}</div></div></div>
+<input placeholder="Subject line..." value={emails[s.id]?.subject||""} disabled={!!eScores[s.id]} onChange={e=>setEmails(p=>({...p,[s.id]:{...p[s.id],subject:e.target.value}}))}
+style={{width:"100%",padding:8,borderRadius:4,border:"1px solid "+C.grayLt,fontSize:13,marginBottom:6}}/>
+<textarea placeholder="Draft email..." value={emails[s.id]?.body||""} rows={5} disabled={!!eScores[s.id]}
+onChange={e=>setEmails(p=>({...p,[s.id]:{...p[s.id],body:e.target.value}}))}
+style={{width:"100%",padding:8,borderRadius:4,border:"1px solid "+C.grayLt,fontSize:13,resize:"vertical",fontFamily:"inherit"}}/>
+<div style={{fontSize:12,fontWeight:600,color:C.gray,margin:"8px 0 6px"}}>Self-Check:</div>
+<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{CHECKLIST.map((item,ci)=>(
+<label key={ci} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,padding:"3px 8px",background:checks[s.id]?.includes(ci)?C.greenLt:C.ivory,borderRadius:4,cursor:"pointer"}}>
+<input type="checkbox" checked={checks[s.id]?.includes(ci)||false} disabled={!!eScores[s.id]}
+onChange={()=>setChecks(p=>{const c=p[s.id]||[];return{...p,[s.id]:c.includes(ci)?c.filter(x=>x!==ci):[...c,ci]}})}/>{item}</label>))}</div>
+{!eScores[s.id]?<div style={{marginTop:10,textAlign:"right"}}><Btn variant="outline" onClick={()=>chkE(s.id)} disabled={!emails[s.id]?.subject||!emails[s.id]?.body} style={{fontSize:12,padding:"6px 14px"}}>Score Email</Btn></div>
+:<div style={{marginTop:10,fontSize:13,color:C.green,fontWeight:600}}>Scored: {eScores[s.id].s}/{eScores[s.id].m}</div>}
+</Card>))}
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score1} disabled={Object.keys(eScores).length<3}>Score & Continue →</Btn></div></div>);
+
+if(ex===1)return(<div>
+<div style={{background:C.greenLt,border:"1px solid "+C.green,borderRadius:8,padding:16,marginBottom:24}}><strong>5A:</strong> {s1}/21</div>
+<h2 style={{color:C.charcoal,fontSize:22,marginBottom:4}}>Exercise 5B: Red Flag Triage</h2>
+{RED_FLAGS.map((r,i)=>(
+<Card key={i} style={{borderLeft:rf[i]?("4px solid "+(rf[i].ok?C.green:C.red)):("4px solid "+C.grayLt)}}>
+<div style={{fontSize:14,fontStyle:"italic",lineHeight:1.6,background:C.ivory,padding:12,borderRadius:6,marginBottom:12}}>"{r.response}"</div>
+<div style={{display:"flex",gap:8}}>{[["screening","Ready for Screening",C.green],["clarify","Needs Clarification",C.orange],["escalate","Escalate to Biruh",C.red]].map(([v,l,cl])=>(
+<button key={v} onClick={()=>!rf[i]&&setRa(p=>({...p,[i]:v}))} disabled={!!rf[i]}
+style={{flex:1,padding:"10px 0",borderRadius:6,fontSize:13,fontWeight:600,background:ra[i]===v?cl:"transparent",color:ra[i]===v?C.white:C.gray,border:"1px solid "+(ra[i]===v?"transparent":C.grayLt)}}>{l}</button>))}</div>
+{ra[i]&&!rf[i]&&<div style={{marginTop:8,textAlign:"right"}}><Btn variant="outline" onClick={()=>chkR(i)} style={{fontSize:12,padding:"6px 14px"}}>Check</Btn></div>}
+{rf[i]&&<div style={{marginTop:10,fontSize:13,color:rf[i].ok?C.green:C.red}}>{rf[i].ok?"\u2713 Correct":"\u2717 Incorrect"} \u2014 {rf[i].exp}</div>}
+</Card>))}
+<div style={{marginTop:24,textAlign:"right"}}><Btn onClick={score2} disabled={Object.keys(rf).length<3}>Score & See Results →</Btn></div></div>);
+
+return(<div><h2 style={{color:C.charcoal,fontSize:22,marginBottom:16}}>Module 5 Results</h2>
+<Score score={ts} total={tp} pass={80}/>
+<Card><strong>5A:</strong> {s1}/21 &nbsp; <strong>5B:</strong> {s2}/6</Card>
+<div style={{textAlign:"right",marginTop:16}}><Btn variant="bronze" onClick={()=>onComplete(ts,tp)}>Complete Module 5 →</Btn></div></div>);
+}
+
+/* ========== M6: Evaluation Scenarios ========== */
+function M6({onComplete}){
+const[scIdx,setScIdx]=useState(0);const[stepIdx,setStepIdx]=useState(0);
+const[answers,setAnswers]=useState({});const[fb,setFb]=useState({});
+const[textInputs,setTI]=useState({});const[triageAnswers,setTA]=useState({});const[triageFb,setTFb]=useState({});
+const[done,setDone]=useState(false);
+var scenario=SIM_SCENARIOS[scIdx];var step=scenario?scenario.steps[stepIdx]:null;var k=scIdx+"-"+stepIdx;
+var canAdvance=false;
+if(step){
+if(step.type==="info")canAdvance=true;
+if(step.type==="choice")canAdvance=!!fb[k];
+if(step.type==="text")canAdvance=!!fb[k];
+if(step.type==="triage"){var allTriageDone=true;if(step.candidates){step.candidates.forEach(function(c,ci){if(!triageFb[scIdx+"-"+ci])allTriageDone=false})}canAdvance=allTriageDone}}
+var advance=function(){if(stepIdx<scenario.steps.length-1){setStepIdx(stepIdx+1);window.scrollTo(0,0)}else if(scIdx<SIM_SCENARIOS.length-1){setScIdx(scIdx+1);setStepIdx(0);window.scrollTo(0,0)}else{setDone(true);window.scrollTo(0,0)}};
+var goBack=function(){if(stepIdx>0){setStepIdx(stepIdx-1);window.scrollTo(0,0)}};
+var chkChoice=function(){var ok=answers[k]===step.answer;setFb(function(p){var n=Object.assign({},p);n[k]={ok:ok,why:step.why};return n})};
+var chkText=function(){var val=textInputs[k]||"";var ok=step.check(val);setFb(function(p){var n=Object.assign({},p);n[k]={ok:ok};return n})};
+var chkTriage=function(ci){var c=step.candidates[ci];var tk=scIdx+"-"+ci;var ok=triageAnswers[tk]===c.answer;setTFb(function(p){var n=Object.assign({},p);n[tk]={ok:ok,why:c.why,answer:c.answer};return n})};
+var totalScore=0,totalPossible=0;
+SIM_SCENARIOS.forEach(function(sc,si){sc.steps.forEach(function(st,sti){var sk=si+"-"+sti;
+if(st.type==="choice"){totalPossible+=2;if(fb[sk]&&fb[sk].ok)totalScore+=2}
+if(st.type==="text"){totalPossible+=2;if(fb[sk]&&fb[sk].ok)totalScore+=2}
+if(st.type==="triage"&&st.candidates){st.candidates.forEach(function(c,ci){totalPossible+=2;var tk=si+"-"+ci;if(triageFb[tk]&&triageFb[tk].ok)totalScore+=2})}})});
+var refProfile=null;for(var ri=stepIdx-1;ri>=0;ri--){if(scenario.steps[ri].type==="info"&&scenario.steps[ri].profile){refProfile=scenario.steps[ri].profile;break}}
+
+if(done)return(<div><h2 style={{color:C.charcoal,fontSize:22,marginBottom:16}}>Module 6 Results</h2>
+<Score score={totalScore} total={totalPossible} pass={80}/>
+<Card>{SIM_SCENARIOS.map(function(sc,si){return <div key={si} style={{marginBottom:8}}><strong>Scenario {si+1}: {sc.title}</strong></div>})}</Card>
+<div style={{textAlign:"right",marginTop:16}}><Btn variant="bronze" onClick={function(){onComplete(totalScore,totalPossible)}}>Complete Module 6 →</Btn></div></div>);
+
+return(<div>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:16,flexWrap:"wrap",gap:8}}>
+<div><h2 style={{color:C.charcoal,fontSize:22,marginBottom:2}}>Scenario {scIdx+1}: {scenario.title}</h2>
+<div style={{fontSize:13,color:C.gray}}>{scenario.subtitle}</div></div>
+<div style={{display:"flex",gap:8}}><Badge text={"Scenario "+(scIdx+1)+"/"+SIM_SCENARIOS.length} color={C.gray}/><Badge text={"Step "+(stepIdx+1)+"/"+scenario.steps.length} color={C.purple}/></div></div>
+<PBar current={stepIdx+1} total={scenario.steps.length}/><div style={{marginTop:20}}/>
+{refProfile&&step.type!=="info"&&(
+<div style={{background:C.white,border:"1px solid "+C.grayLt,borderRadius:8,padding:12,marginBottom:16,fontSize:12}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+<span style={{fontWeight:700,fontSize:14,color:C.charcoal}}>{refProfile.name}</span>
+<span style={{fontSize:11,background:C.blueLt,padding:"2px 8px",borderRadius:3,color:C.blue}}>Reference</span></div>
+<span>{refProfile.cred}</span> \u2014 <strong>{refProfile.states}</strong>
+{refProfile.flag&&<div style={{marginTop:4,color:C.orange,fontSize:11}}><strong>Flag:</strong> {refProfile.flag}</div>}
+</div>)}
+{step.type==="info"&&(<Card style={{borderLeft:"4px solid "+C.blue,background:C.blueLt}}>
+<div style={{fontSize:14,lineHeight:1.7,marginBottom:step.profile?16:0}}>{step.content}</div>
+{step.profile&&(<div style={{background:C.white,borderRadius:8,padding:16,border:"1px solid "+C.grayLt}}>
+<div style={{fontWeight:700,fontSize:18,marginBottom:8}}>{step.profile.name}</div>
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:13}}>
+<div><span style={{color:C.gray}}>Credential:</span> <strong>{step.profile.cred}</strong></div>
+<div><span style={{color:C.gray}}>License:</span> <strong>{step.profile.states}</strong></div>
+<div style={{gridColumn:"1 / -1"}}><span style={{color:C.gray}}>Experience:</span> {step.profile.exp}</div>
+<div><span style={{color:C.gray}}>Preference:</span> {step.profile.pref}</div>
+<div><span style={{color:C.gray}}>Salary:</span> {step.profile.salary}</div>
+{step.profile.flag&&<div style={{gridColumn:"1 / -1",background:C.orangeLt,padding:8,borderRadius:4,border:"1px solid "+C.orange}}><strong style={{color:C.orange}}>Flag:</strong> {step.profile.flag}</div>}
+</div></div>)}</Card>)}
+{step.type==="choice"&&(<Card>
+<div style={{fontWeight:600,fontSize:15,marginBottom:12,lineHeight:1.5}}>{step.prompt}</div>
+<div style={{display:"flex",flexDirection:"column",gap:8}}>{step.options.map(function(opt){
+var sel=answers[k]===opt;var f=fb[k];var isCorrect=f&&opt===step.answer;var isWrong=f&&sel&&!f.ok;
+return <button key={opt} onClick={function(){if(!f){var n=Object.assign({},answers);n[k]=opt;setAnswers(n)}}} disabled={!!f}
+style={{padding:"12px 16px",borderRadius:8,fontSize:14,textAlign:"left",lineHeight:1.5,
+background:isCorrect?C.greenLt:isWrong?C.redLt:sel?C.blueLt:"transparent",
+border:"1px solid "+(isCorrect?C.green:isWrong?C.red:sel?C.blue:C.grayLt)}}>
+{opt}{isCorrect?" \u2713":""}{isWrong?" \u2717":""}</button>})}</div>
+{answers[k]&&!fb[k]&&<div style={{marginTop:10,textAlign:"right"}}><Btn variant="outline" onClick={chkChoice} style={{fontSize:13,padding:"8px 16px"}}>Check</Btn></div>}
+{fb[k]&&<div style={{marginTop:12,padding:12,borderRadius:8,background:fb[k].ok?C.greenLt:C.redLt,fontSize:13,lineHeight:1.6}}><strong>{fb[k].ok?"\u2713 Correct":"\u2717 Incorrect"}</strong><br/>{fb[k].why}</div>}
+</Card>)}
+{step.type==="text"&&(<Card>
+<div style={{fontWeight:600,fontSize:15,marginBottom:8,lineHeight:1.5}}>{step.prompt}</div>
+{step.hint&&<div style={{fontSize:12,color:C.gray,marginBottom:12}}>{step.hint}</div>}
+<textarea value={textInputs[k]||""} onChange={function(e){var n=Object.assign({},textInputs);n[k]=e.target.value;setTI(n)}} disabled={!!fb[k]} rows={4} placeholder="Type your answer..."
+style={{width:"100%",padding:12,borderRadius:6,border:"1px solid "+C.grayLt,fontSize:14,resize:"vertical",fontFamily:"inherit"}}/>
+{textInputs[k]&&!fb[k]&&<div style={{marginTop:10,textAlign:"right"}}><Btn variant="outline" onClick={chkText} style={{fontSize:13,padding:"8px 16px"}}>Check</Btn></div>}
+{fb[k]&&<div style={{marginTop:12,padding:12,borderRadius:8,background:fb[k].ok?C.greenLt:C.redLt,fontSize:13}}>{fb[k].ok?step.feedback_good:step.feedback_bad}</div>}
+</Card>)}
+{step.type==="triage"&&(<div>
+<Card style={{borderLeft:"4px solid "+C.purple,background:C.purpleLt}}><div style={{fontWeight:600,fontSize:15}}>{step.prompt}</div></Card>
+{step.candidates.map(function(c,ci){var tk=scIdx+"-"+ci;var f=triageFb[tk];
+return <Card key={ci} style={{borderLeft:"4px solid "+(f?(f.ok?C.green:C.red):C.grayLt)}}>
+<div style={{fontWeight:700,fontSize:15,marginBottom:4}}>{c.name}</div>
+<div style={{fontSize:13,color:C.gray,marginBottom:10,lineHeight:1.5}}>{c.situation}</div>
+<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{c.options.map(function(opt){
+var sel=triageAnswers[tk]===opt;var isCorrect=f&&opt===c.answer;var isWrong=f&&sel&&!f.ok;
+return <button key={opt} onClick={function(){if(!f){var n=Object.assign({},triageAnswers);n[tk]=opt;setTA(n)}}} disabled={!!f}
+style={{padding:"8px 14px",borderRadius:6,fontSize:12,fontWeight:600,
+background:isCorrect?C.greenLt:isWrong?C.redLt:sel?C.blueLt:"transparent",
+color:isCorrect?C.green:isWrong?C.red:sel?C.blue:C.gray,
+border:"1px solid "+(isCorrect?C.green:isWrong?C.red:sel?C.blue:C.grayLt)}}>{opt}{isCorrect?" \u2713":""}{isWrong?" \u2717":""}</button>})}</div>
+{triageAnswers[tk]&&!f&&<div style={{marginTop:8,textAlign:"right"}}><Btn variant="outline" onClick={function(){chkTriage(ci)}} style={{fontSize:11,padding:"5px 12px"}}>Check</Btn></div>}
+{f&&<div style={{marginTop:8,fontSize:12,color:f.ok?C.green:C.red}}>{f.ok?"\u2713 Correct":"\u2717 Correct: "+f.answer} \u2014 {f.why}</div>}
+</Card>})}</div>)}
+<div style={{marginTop:20,display:"flex",justifyContent:"space-between"}}>
+<div>{stepIdx>0&&<Btn variant="outline" onClick={goBack} style={{fontSize:13,padding:"8px 16px"}}>{"\u2190"} Back</Btn>}</div>
+<div>{canAdvance&&<Btn onClick={advance}>{stepIdx<scenario.steps.length-1?"Next Step \u2192":(scIdx<SIM_SCENARIOS.length-1?"Next Scenario \u2192":"See Results \u2192")}</Btn>}</div>
+</div></div>);
+}
+
+/* ========== INTRO ========== */
+function Intro({onDone}){
+const[scene,setScene]=useState(0);
+const[out,setOut]=useState(false);
+
+React.useEffect(function(){
+if(scene<4){var t=setTimeout(function(){setScene(function(s){return s+1})},2200);return function(){clearTimeout(t)}}
+},[scene]);
+
+var finish=function(){setOut(true);setTimeout(onDone,600)};
+
+var slides=[
+{img:"slide1.png",text:"From Addis Ababa..."},
+{img:"slide2.png",text:"...through the training..."},
+{img:"slide3.png",text:"...to certification..."},
+{img:"slide4.png",text:"...building careers that cross borders."},
+];
+
+return(
+<div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"#0a0a1a",zIndex:9999,opacity:out?0:1,transition:"opacity .6s ease"}}>
+
+{slides.map(function(sl,i){return(
+<div key={i} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",opacity:scene===i?1:0,transition:"opacity 1s ease",backgroundImage:"url("+sl.img+")",backgroundSize:"cover",backgroundPosition:"center"}}/>
+)})}
+
+<div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",background:"linear-gradient(to bottom, rgba(10,10,26,.55) 0%, rgba(10,10,26,.75) 100%)"}}>
+<div style={{position:"absolute",bottom:"12%",left:0,width:"100%",textAlign:"center",padding:"0 30px"}}>
+
+<div key={scene} style={{animation:"fadeUp .7s ease both"}}>
+<div style={{fontFamily:"Georgia,serif",fontSize:scene===3?22:30,color:"#F8F6F1",letterSpacing:scene===3?.5:1,lineHeight:1.4,textShadow:"0 2px 20px rgba(0,0,0,.5)"}}>
+{slides[Math.min(scene,3)].text}
+</div>
+</div>
+
+{scene>=4&&(
+<button onClick={finish} style={{marginTop:24,padding:"14px 44px",background:"#8B7355",color:"#F8F6F1",border:"none",borderRadius:8,fontSize:16,fontFamily:"Georgia,serif",letterSpacing:1,cursor:"pointer",animation:"fadeUp .6s ease .2s both",opacity:0,boxShadow:"0 4px 20px rgba(139,115,85,.4)"}}>
+Begin Training
+</button>
+)}
+
+<div style={{display:"flex",justifyContent:"center",gap:8,marginTop:20}}>
+{[0,1,2,3].map(function(i){return(
+<div key={i} style={{width:scene===i?28:8,height:6,borderRadius:3,background:scene>=i?"#8B7355":"rgba(248,246,241,.15)",transition:"all .4s ease"}}/>
+)})}
+</div>
+
+<div style={{marginTop:16}}>
+<div style={{fontFamily:"Georgia,serif",fontSize:12,letterSpacing:4,color:"rgba(248,246,241,.4)"}}>
+DESTA WORKS
+</div>
+</div>
+
+</div>
+</div>
+
+<button onClick={finish} style={{position:"absolute",top:24,right:24,background:"transparent",border:"1px solid rgba(248,246,241,.2)",color:"rgba(248,246,241,.5)",padding:"6px 18px",borderRadius:20,fontSize:12,cursor:"pointer",zIndex:1}}>
+Skip →
+</button>
+</div>
+);
+}
+
+/* ========== APP ========== */
+function App(){
+const[view,setView]=useState("home");const[scores,setScores]=useState({});
+const[name,setName]=useState("");const[nameSet,setNameSet]=useState(false);
+const[visited,setVisited]=useState({});
+const[showIntro,setShowIntro]=useState(true);
+
+if(showIntro)return <Intro onDone={()=>setShowIntro(false)}/>;
+
+const handleComplete=(mod,s,t)=>{setScores(p=>({...p,[mod]:{s,t}}));setView("home");window.scrollTo(0,0)};
+const goTo=function(key){setVisited(function(p){var n=Object.assign({},p);n[key]=true;return n});setView(key);window.scrollTo(0,0)};
+const modules=[
+{key:"m1",num:"1",title:"Healthcare Knowledge",desc:"Licenses, client matching, fill-in-the-blanks",color:C.purple,day:"Day 1",pass:80,ex:"3 exercises",Comp:M1},
+{key:"m2",num:"2",title:"ATS Simulator",desc:"Real statuses, new candidate entry, error detection",color:C.blue,day:"Day 2",pass:80,ex:"3 exercises",Comp:M2},
+{key:"m3",num:"3",title:"Resume Conversion Lab",desc:"The one rule: can you change this or not?",color:C.green,day:"Day 3",pass:80,ex:"2 exercises",Comp:M3},
+{key:"m4",num:"4",title:"Sourcing Simulator",desc:"Boolean search and license verification",color:C.orange,day:"Day 4",pass:80,ex:"2 exercises",Comp:M4},
+{key:"m5",num:"5",title:"Outreach Simulator",desc:"Email drafts and red flag triage",color:C.red,day:"Day 5",pass:80,ex:"2 exercises",Comp:M5},
+{key:"m6",num:"6",title:"Candidate Evaluation Scenarios",desc:"4 simulations: pipeline, red flags, triage, mistake recovery",color:C.charcoal,day:"Day 5",pass:80,ex:"4 scenarios",Comp:M6},
+];
+const allDone=modules.every(m=>scores[m.key]);
+return(<div>
+{modules.map(m=>{if(!visited[m.key])return null;var Comp=m.Comp;
+return(<div key={m.key} style={{display:view===m.key?"block":"none",maxWidth:800,margin:"0 auto",padding:"20px 24px"}}>
+<Header onHome={()=>{setView("home");window.scrollTo(0,0)}} showBack={true}/>
+<div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+<Badge text={"MODULE "+m.num} color={m.color}/><span style={{fontSize:20,fontWeight:600}}>{m.title}</span></div>
+<Comp onComplete={(s,t)=>handleComplete(m.key,s,t)}/><Foot/></div>)})}
+<div style={{display:view==="home"?"block":"none",maxWidth:800,margin:"0 auto",padding:"20px 24px"}}>
+<Header onHome={()=>setView("home")}/>
+<div style={{background:C.blue,borderRadius:8,padding:32,marginBottom:32,color:C.white}}>
+<div style={{fontSize:12,letterSpacing:2,opacity:.7,marginBottom:8}}>DESTA WORKS \u2014 DESTA UNIVERSITY</div>
+<div style={{fontSize:28,fontWeight:700,fontFamily:"Georgia,serif",marginBottom:8}}>Week 1 Training</div>
+<div style={{fontSize:14,opacity:.8}}>Interactive modules for Associate Recruiters. Complete each module and meet the pass threshold.</div>
+{!nameSet&&<div style={{marginTop:16,display:"flex",gap:8}}>
+<input placeholder="Enter your name to begin..." value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&name.trim())setNameSet(true)}}
+style={{flex:1,padding:"8px 12px",borderRadius:4,border:"none",fontSize:14,color:C.charcoal}}/>
+<button onClick={()=>{if(name.trim())setNameSet(true)}} style={{padding:"8px 20px",borderRadius:4,background:C.bronze,color:C.white,fontSize:14,fontWeight:600,opacity:name.trim()?1:.4}}>Begin</button></div>}
+{nameSet&&<div style={{marginTop:12,fontSize:14,opacity:.9}}>Welcome, {name}.</div>}</div>
+{modules.map(m=>{const d=!!scores[m.key];const p=d?Math.round(scores[m.key].s/scores[m.key].t*100):null;return(
+<div key={m.key} onClick={()=>!d&&goTo(m.key)} style={{background:C.white,border:"1px solid "+(d?C.green:C.grayLt),borderLeft:"4px solid "+(d?C.green:m.color),borderRadius:8,padding:20,marginBottom:12,cursor:d?"default":"pointer"}}>
+<div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+<div><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+<Badge text={"M"+m.num} color={d?C.green:m.color}/><span style={{fontSize:18,fontWeight:600}}>{m.title}</span></div>
+<div style={{fontSize:13,color:C.gray}}>{m.desc}</div></div>
+<div style={{textAlign:"right"}}>{d?<div><div style={{fontSize:24,fontWeight:700,color:p>=m.pass?C.green:C.red}}>{p}%</div><div style={{fontSize:11,color:C.gray}}>{scores[m.key].s}/{scores[m.key].t} pts</div></div>
+:<div><div style={{fontSize:12,color:m.color,fontWeight:600}}>{m.day}</div><div style={{fontSize:11,color:C.gray}}>{m.ex} \u2014 Pass: {"\u2265"}{m.pass}%</div></div>}</div>
+</div>{d&&<PBar current={p} total={100}/>}</div>)})}
+{allDone&&(<div style={{background:C.ivory,border:"2px solid "+C.bronze,borderRadius:8,padding:24,marginTop:24,textAlign:"center"}}>
+<div style={{fontFamily:"Georgia,serif",fontSize:20,marginBottom:8}}>Week 1 Training Complete</div>
+<div style={{fontSize:14,color:C.gray,marginBottom:16}}>{name&&<span>{name} \u2014 </span>}
+Combined: {modules.reduce((s,m)=>s+(scores[m.key]?.s||0),0)} / {modules.reduce((s,m)=>s+(scores[m.key]?.t||0),0)} points</div>
+<Btn variant="bronze" onClick={()=>{
+const data={name,date:new Date().toISOString().split('T')[0],modules:Object.fromEntries(modules.map(m=>[m.key,{title:m.title,score:scores[m.key]?.s,total:scores[m.key]?.t,pct:Math.round((scores[m.key]?.s||0)/(scores[m.key]?.t||1)*100)}]))};
+const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="desta-training-"+name.replace(/\s+/g,'-').toLowerCase()+"-"+data.date+".json";a.click();
+}}>Download Results</Btn></div>)}
+<Foot/></div></div>);
+}
+ReactDOM.render(<App/>,document.getElementById("root"));
+</script>
+</body>
+</html>
