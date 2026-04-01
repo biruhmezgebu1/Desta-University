@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desta Works × Desta Health University — Week 1 Training</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #F8F6F1; color: #2D2D2D; -webkit-font-smoothing: antialiased; }
+  select, input, textarea, button { font-family: inherit; }
+  input, textarea, select { outline: none; }
+  input:focus, textarea:focus, select:focus { border-color: #8B7355 !important; }
+  button { transition: all 0.15s ease; }
+  button:not(:disabled):hover { opacity: 0.88; transform: translateY(-1px); }
+  button:not(:disabled):active { transform: translateY(0); }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #C5C5C5; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const C = {
+  charcoal: "#2D2D2D", bronze: "#8B7355", ivory: "#F8F6F1", blue: "#1E4A8A",
+  blueLt: "#EBF0F8", white: "#FFFFFF", green: "#4CAF50", greenLt: "#E8F5E9",
+  red: "#F44336", redLt: "#FFEBEE", orange: "#FF9800", orangeLt: "#FFF3E0",
+  purple: "#9C27B0", purpleLt: "#F3E5F5", gray: "#555555", grayLt: "#E0E0E0",
+};
+
+const LICENSE_DATA = [
+  { abbr: "PMHNP-BC", full: "Psychiatric Mental Health Nurse Practitioner, Board Certified", scope: "Prescribes medication, diagnoses, provides therapy", type: "prescriber" },
+  { abbr: "LCSW", full: "Licensed Clinical Social Worker", scope: "Provides therapy, case management, advocacy", type: "therapist" },
+  { abbr: "LPC", full: "Licensed Professional Counselor", scope: "Provides therapy and counseling", type: "therapist" },
+  { abbr: "LMFT", full: "Licensed Marriage and Family Therapist", scope: "Specializes in relationship and family therapy", type: "therapist" },
+  { abbr: "MD (Psychiatry)", full: "Medical Doctor, Psychiatry", scope: "Diagnoses, prescribes, manages medication", type: "prescriber" },
+  { abbr: "DO (Psychiatry)", full: "Doctor of Osteopathic Medicine, Psychiatry", scope: "Same scope as MD in psychiatry", type: "prescriber" },
+  { abbr: "PsyD", full: "Doctor of Psychology", scope: "Provides therapy, psychological testing", type: "therapist" },
+  { abbr: "PA-C", full: "Physician Assistant, Certified", scope: "Diagnoses, treats, prescribes under supervision", type: "prescriber" },
+  { abbr: "NP / APRN", full: "Nurse Practitioner / Advanced Practice Registered Nurse", scope: "Primary or specialty care, diagnoses, prescribes", type: "prescriber" },
+  { abbr: "MHT", full: "Mental Health Technician", scope: "Direct patient care under supervision, not licensed", type: "support" },
+  { abbr: "BCBA", full: "Board Certified Behavior Analyst", scope: "ABA therapy, typically autism spectrum", type: "therapist" },
+  { abbr: "PhD (Clin Psych)", full: "Doctor of Philosophy, Clinical Psychology", scope: "Therapy, research, psychological testing", type: "therapist" },
+];
+
+const CANDIDATES = [
+  { id: 1, name: "Sarah Chen", cred: "PMHNP-BC", states: ["CT", "NY"], exp: "8 years outpatient, 3 years child/adolescent", pref: "Hybrid", salary: "$140,000", answer: { client: "Sterling Institute", qualifies: true, notes: "CT license + child experience + hybrid. Also matches Contemporary Care CT." } },
+  { id: 2, name: "James Rivera", cred: "LCSW", states: ["FL"], exp: "5 years community mental health, no private practice", pref: "Fully remote", salary: "$75,000", answer: { client: "Contemporary Care", qualifies: "conditional", notes: "Wants fully remote \u2014 Contemporary Care is hybrid. No private practice experience. Needs clarification." } },
+  { id: 3, name: "Dr. Amelia Foster", cred: "MD, Psychiatrist", states: ["CT"], exp: "12 years inpatient and outpatient, adult and geriatric", pref: "On-site 3 days/week including weekends", salary: "$320,000", answer: { client: "DOCs Medical Group", qualifies: true, notes: "CT license + on-site + weekends OK. High salary \u2014 verify range. Also strong for Sterling." } },
+  { id: 4, name: "Marcus Williams", cred: "MHT", states: ["NJ"], exp: "2 years residential treatment facility", pref: "Full-time, any schedule", salary: "Open", answer: { client: "DOCs Medical Group", qualifies: "conditional", notes: "MHT is not a licensed provider. Confirm client has MHT openings." } },
+  { id: 5, name: "Dr. Linda Park", cred: "DO, Psychiatrist", states: ["MA"], exp: "6 years telehealth-only", pref: "Remote only", salary: "$280,000", answer: { client: "None \u2014 auto-disqualify", qualifies: false, notes: "MA-only license (no CT). Telehealth-only preference. Does not match any current client." } },
+];
+
+const CLIENT_DATA = [
+  { name: "Sterling Institute", priority: "HIGH", state: "CT" },
+  { name: "Contemporary Care", priority: "MED", state: "CT/NJ/FL" },
+  { name: "DOCs Medical Group", priority: "STANDARD", state: "CT" },
+];
+
+const STATUS_SCENARIOS = [
+  { scenario: "Resume received from Indeed. Not yet reviewed by anyone.", answer: "New Lead", why: "Candidate has entered the system but no one has evaluated them yet." },
+  { scenario: "Associate reviewed resume. Candidate matches Sterling Institute criteria. CT license verified.", answer: "Qualified", why: "Reviewed, meets criteria, license confirmed." },
+  { scenario: "Outreach email sent to candidate 2 days ago. No response yet.", answer: "Contacted", why: "Active outreach has been made. Waiting for candidate response." },
+  { scenario: "Candidate responded with interest. Screening call being scheduled with Farhaz.", answer: "Screening", why: "Candidate is engaged and moving into the screening stage." },
+  { scenario: "Farhaz completed screening. Candidate approved for client submission.", answer: "Submitted", why: "Passed screening. Package being sent to client." },
+  { scenario: "Candidate has been submitted to Sterling. Awaiting client decision.", answer: "Client Review", why: "In the client\u2019s hands now." },
+  { scenario: "Candidate declined the position after client interview.", answer: "Declined / Closed", why: "Candidate withdrew. Close the record." },
+  { scenario: "Candidate applied for Sterling but holds only a Florida license. No CT license.", answer: "Disqualified", why: "Auto-DQ: does not hold the required state license." },
+  { scenario: "Three outreach attempts over 10 days. No response from candidate.", answer: "Unresponsive", why: "Multiple attempts failed. Mark as unresponsive." },
+  { scenario: "During license verification, discovered candidate\u2019s CT license expired 3 months ago.", answer: "Disqualified", why: "Expired license = cannot practice. DQ until renewed." },
+];
+
+const PROFILE_ERRORS = [
+  { profile: { name: "Sarah J. Chen", license: "PMHNP", state: "CT", role: "NP", status: "Qualified" }, errors: ["License should be PMHNP-BC (board certification missing)"], fields: ["license"] },
+  { profile: { name: "Dr. James Rivera", license: "LCSW", state: "FL", role: "Therapist", status: "New Lead" }, errors: ["'Dr.' prefix should not appear \u2014 LCSW is not a doctoral credential"], fields: ["name"] },
+  { profile: { name: "Marcus Williams", license: "MHT", state: "NJ", role: "Psychiatrist", status: "Qualified" }, errors: ["Role should be MHT/Tech, not Psychiatrist", "Status should be New Lead \u2014 no review documented"], fields: ["role", "status"] },
+  { profile: { name: "Linda Park", license: "DO, Psychiatry", state: "MA, CT", role: "Psychiatrist", status: "New Lead" }, errors: ["CT license unverified \u2014 resume showed MA only. Remove CT or verify."], fields: ["state"] },
+  { profile: { name: "Amelia Foster", license: "MD", state: "Connecticut", role: "Psychiatrist", status: "Screening" }, errors: ["State should be abbreviation 'CT'", "Status is Screening but no notes recorded", "License should specify: 'MD, Psychiatry'"], fields: ["state", "status", "license"] },
+];
+
+const OUTREACH_SCENARIOS = [
+  { id: 1, candidate: "Sarah Chen, PMHNP-BC", pronouns: "she/her", client: "Sterling Institute", instructions: "Standard outreach. Strong match.", type: "email" },
+  { id: 2, candidate: "James Rivera, LCSW", pronouns: "he/him", client: "Contemporary Care (FL)", instructions: "He applied through Indeed. Follow up on application.", type: "email" },
+  { id: 3, candidate: "Taylor Kim, LPC", pronouns: "they/them", client: "Contemporary Care (NJ)", instructions: "Non-binary candidate. Pronoun accuracy is critical.", type: "email" },
+];
+
+const RED_FLAG_RESPONSES = [
+  { response: "Hi, thanks for reaching out. I\u2019m interested but I should mention my CT license is currently under review by the board. I\u2019m expecting it to be resolved in 2-3 months. Can we still move forward?", answer: "escalate", explanation: "License under board review is a red flag. Do not advance to screening. Flag for Biruh immediately." },
+  { response: "Thank you for contacting me. I\u2019d love to learn more about this opportunity. My availability for a call is Tuesday or Thursday between 10am-12pm EST. Looking forward to hearing from you.", answer: "screening", explanation: "Clean response. Specific availability provided. Schedule screening call with Farhaz." },
+  { response: "I appreciate the outreach but I need to know the salary range before I invest time in a call. What are you offering?", answer: "clarify", explanation: "Valid question. Provide range if authorized, otherwise explain compensation is discussed during screening. Escalate to Biruh if unsure." },
+];
+
+const STATUS_OPTIONS = ["New Lead", "Qualified", "Contacted", "Screening", "Submitted", "Client Review", "Declined / Closed", "Disqualified", "Unresponsive"];
+
+const CHECKLIST_ITEMS = [
+  "Subject line present and professional",
+  "Greeting uses candidate\u2019s correct name",
+  "No MD/DO/Dr. in YOUR signature",
+  "Introduction identifies you as Healthcare Recruiting Associate, DestaHealth Recruiting",
+  "Specific opportunity or client mentioned",
+  "Clear CTA (schedule call, confirm interest, or respond with availability)",
+  "Pronouns used correctly throughout",
+  "Correct signature block",
+  "Under 150 words",
+];
+
+// Components
+const Badge = ({ text, color = C.blue }) => (
+  <span style={{ background: color, color: C.white, padding: "2px 10px", borderRadius: 3, fontSize: 12, fontWeight: 600, letterSpacing: 0.5, whiteSpace: "nowrap" }}>{text}</span>
+);
+
+const ProgressBar = ({ current, total }) => (
+  <div style={{ background: C.grayLt, borderRadius: 4, height: 6, width: "100%", marginTop: 8 }}>
+    <div style={{ background: C.bronze, borderRadius: 4, height: 6, width: `${Math.min((current / total) * 100, 100)}%`, transition: "width 0.4s ease" }} />
+  </div>
+);
+
+const ScoreDisplay = ({ score, total, pass }) => {
+  const pct = Math.round((score / total) * 100);
+  const passed = pct >= pass;
+  return (
+    <div style={{ background: passed ? C.greenLt : C.redLt, border: `2px solid ${passed ? C.green : C.red}`, borderRadius: 8, padding: 24, textAlign: "center", margin: "20px 0" }}>
+      <div style={{ fontSize: 48, fontWeight: 700, color: passed ? C.green : C.red, fontFamily: "Georgia, serif" }}>{pct}%</div>
+      <div style={{ fontSize: 14, color: C.gray, marginTop: 4 }}>{score} / {total} points</div>
+      <div style={{ marginTop: 12, fontSize: 16, fontWeight: 600, color: passed ? C.green : C.red }}>
+        {passed ? "\u2713 PASSED" : "\u2717 BELOW THRESHOLD"} \u2014 {pass}% required
+      </div>
+    </div>
+  );
+};
+
+const Card = ({ children, style = {} }) => (
+  <div style={{ background: C.white, border: `1px solid ${C.grayLt}`, borderRadius: 8, padding: 20, marginBottom: 16, ...style }}>{children}</div>
+);
+
+const Btn = ({ children, onClick, variant = "primary", disabled = false, style = {} }) => {
+  const styles = {
+    primary: { background: C.charcoal, color: C.white, border: "none" },
+    bronze: { background: C.bronze, color: C.white, border: "none" },
+    outline: { background: "transparent", color: C.charcoal, border: `1px solid ${C.charcoal}` },
+    green: { background: C.green, color: C.white, border: "none" },
+  };
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{ padding: "10px 24px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.4 : 1, ...styles[variant], ...style }}>
+      {children}
+    </button>
+  );
+};
+
+const Header = ({ onHome }) => (
+  <div style={{ borderBottom: `2px solid ${C.bronze}`, padding: "16px 0", marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div style={{ cursor: "pointer" }} onClick={onHome}>
+      <div style={{ fontFamily: "Georgia, serif", fontSize: 18, letterSpacing: 4, color: C.charcoal, fontWeight: 400, lineHeight: 1.2 }}>D E S T A</div>
+      <div style={{ fontFamily: "Georgia, serif", fontSize: 18, letterSpacing: 4, color: C.bronze, fontWeight: 400, lineHeight: 1.2 }}>W O R K S</div>
+    </div>
+    <div style={{ textAlign: "right" }}>
+      <div style={{ fontSize: 13, color: C.blue, fontWeight: 600 }}>Desta Health University</div>
+      <div style={{ fontSize: 12, color: C.gray }}>Week 1 Interactive Training</div>
+    </div>
+  </div>
+);
+
+// ===== MODULE 1 =====
+function Module1({ onComplete }) {
+  const [exercise, setExercise] = useState(0);
+  const [matchAnswers, setMatchAnswers] = useState({});
+  const [candidateAnswers, setCandidateAnswers] = useState({});
+  const [showFeedback, setShowFeedback] = useState({});
+  const [matchScore, setMatchScore] = useState(null);
+  const [candidateScore, setCandidateScore] = useState(null);
+
+  const typeOptions = ["prescriber", "therapist", "support"];
+
+  const scoreMatching = () => {
+    let correct = 0;
+    LICENSE_DATA.forEach(lic => { if (matchAnswers[lic.abbr] === lic.type) correct++; });
+    setMatchScore(correct);
+    setExercise(1);
+    window.scrollTo(0, 0);
+  };
+
+  const finishCandidates = () => {
+    let correct = 0;
+    CANDIDATES.forEach(c => {
+      const ans = candidateAnswers[c.id] || {};
+      if (ans.client === c.answer.client) correct += 1;
+      if ((ans.qualifies === "yes" && c.answer.qualifies === true) || (ans.qualifies === "no" && c.answer.qualifies === false) || (ans.qualifies === "conditional" && c.answer.qualifies === "conditional")) correct += 1;
+    });
+    setCandidateScore(correct);
+    setExercise(2);
+    window.scrollTo(0, 0);
+  };
+
+  const totalScore = (matchScore || 0) + (candidateScore || 0);
+  const totalPossible = 12 + 10;
+
+  if (exercise === 0) return (
+    <div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 4 }}>Exercise 1A: License Classification</h2>
+      <p style={{ color: C.gray, fontSize: 14, marginBottom: 20 }}>For each credential, select whether the role is a <strong>Prescriber</strong>, <strong>Therapist</strong>, or <strong>Support</strong> role.</p>
+      <ProgressBar current={Object.keys(matchAnswers).length} total={12} />
+      <div style={{ marginTop: 20 }}>
+        {LICENSE_DATA.map(lic => (
+          <Card key={lic.abbr} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ minWidth: 200 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, color: C.charcoal }}>{lic.abbr}</div>
+              <div style={{ fontSize: 13, color: C.gray, marginTop: 2 }}>{lic.full}</div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {typeOptions.map(t => (
+                <button key={t} onClick={() => setMatchAnswers(prev => ({ ...prev, [lic.abbr]: t }))}
+                  style={{ padding: "6px 16px", borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    background: matchAnswers[lic.abbr] === t ? (t === "prescriber" ? C.blue : t === "therapist" ? C.purple : C.orange) : "transparent",
+                    color: matchAnswers[lic.abbr] === t ? C.white : C.gray,
+                    border: `1px solid ${matchAnswers[lic.abbr] === t ? "transparent" : C.grayLt}` }}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div style={{ marginTop: 24, textAlign: "right" }}>
+        <Btn onClick={scoreMatching} disabled={Object.keys(matchAnswers).length < 12}>Score & Continue \u2192</Btn>
+      </div>
+    </div>
+  );
+
+  if (exercise === 1) return (
+    <div>
+      <div style={{ background: C.greenLt, border: `1px solid ${C.green}`, borderRadius: 8, padding: 16, marginBottom: 24 }}>
+        <strong>Exercise 1A Result:</strong> {matchScore} / 12 correct ({Math.round(matchScore / 12 * 100)}%)
+      </div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 4 }}>Exercise 1B: Candidate-Client Matching</h2>
+      <p style={{ color: C.gray, fontSize: 14, marginBottom: 20 }}>For each candidate, select the best client match and whether they qualify.</p>
+      {CANDIDATES.map(c => (
+        <Card key={c.id} style={{ borderLeft: `4px solid ${C.blue}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: 8 }}>
+            <div><div style={{ fontWeight: 700, fontSize: 16 }}>{c.name}</div>
+              <div style={{ fontSize: 13, color: C.gray }}>{c.cred} \u2014 Licensed in {c.states.join(", ")}</div></div>
+            <Badge text={c.salary} color={C.gray} />
+          </div>
+          <div style={{ fontSize: 13, marginTop: 8 }}><strong>Experience:</strong> {c.exp}<br /><strong>Preference:</strong> {c.pref}</div>
+          <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: C.gray, display: "block", marginBottom: 4 }}>Best Client Match</label>
+              <select value={candidateAnswers[c.id]?.client || ""} onChange={e => setCandidateAnswers(prev => ({ ...prev, [c.id]: { ...prev[c.id], client: e.target.value } }))}
+                style={{ width: "100%", padding: 8, borderRadius: 4, border: `1px solid ${C.grayLt}`, fontSize: 14 }}>
+                <option value="">Select...</option>
+                {CLIENT_DATA.map(cl => <option key={cl.name} value={cl.name}>{cl.name}</option>)}
+                <option value="None \u2014 auto-disqualify">None \u2014 auto-disqualify</option>
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: C.gray, display: "block", marginBottom: 4 }}>Qualifies?</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[["yes", "Yes", C.green], ["conditional", "Conditional", C.orange], ["no", "No", C.red]].map(([val, label, col]) => (
+                  <button key={val} onClick={() => setCandidateAnswers(prev => ({ ...prev, [c.id]: { ...prev[c.id], qualifies: val } }))}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                      background: candidateAnswers[c.id]?.qualifies === val ? col : "transparent",
+                      color: candidateAnswers[c.id]?.qualifies === val ? C.white : C.gray,
+                      border: `1px solid ${candidateAnswers[c.id]?.qualifies === val ? "transparent" : C.grayLt}` }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          {!showFeedback[c.id] ? (
+            <div style={{ marginTop: 12, textAlign: "right" }}>
+              <Btn variant="outline" onClick={() => setShowFeedback(prev => ({ ...prev, [c.id]: true }))} style={{ fontSize: 12, padding: "6px 16px" }}>Check Answer</Btn>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12, background: C.ivory, borderRadius: 6, padding: 12, fontSize: 13 }}>
+              <strong>Correct:</strong> {c.answer.client} \u2014 {c.answer.qualifies === true ? "Yes" : c.answer.qualifies === false ? "No" : "Conditional"}<br />
+              <span style={{ color: C.gray }}>{c.answer.notes}</span>
+            </div>
+          )}
+        </Card>
+      ))}
+      <div style={{ marginTop: 24, textAlign: "right" }}>
+        <Btn onClick={finishCandidates}>Score & See Results \u2192</Btn>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 16 }}>Module 1 Results</h2>
+      <ScoreDisplay score={totalScore} total={totalPossible} pass={80} />
+      <Card><div style={{ fontSize: 14 }}><strong>Exercise 1A:</strong> {matchScore} / 12<br /><strong>Exercise 1B:</strong> {candidateScore} / 10</div></Card>
+      <div style={{ textAlign: "right", marginTop: 16 }}>
+        <Btn variant="bronze" onClick={() => onComplete(totalScore, totalPossible)}>Complete Module 1 \u2192</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ===== MODULE 2 =====
+function Module2({ onComplete }) {
+  const [exercise, setExercise] = useState(0);
+  const [statusAnswers, setStatusAnswers] = useState({});
+  const [statusFeedback, setStatusFeedback] = useState({});
+  const [errorSelections, setErrorSelections] = useState({});
+  const [errorFeedback, setErrorFeedback] = useState({});
+  const [statusScore, setStatusScore] = useState(null);
+  const [errorScore, setErrorScore] = useState(null);
+
+  const checkStatus = (idx) => {
+    const correct = statusAnswers[idx] === STATUS_SCENARIOS[idx].answer;
+    setStatusFeedback(prev => ({ ...prev, [idx]: { correct, answer: STATUS_SCENARIOS[idx].answer, why: STATUS_SCENARIOS[idx].why } }));
+  };
+
+  const scoreStatus = () => {
+    let correct = 0;
+    STATUS_SCENARIOS.forEach((s, i) => { if (statusAnswers[i] === s.answer) correct++; });
+    setStatusScore(correct);
+    setExercise(1);
+    window.scrollTo(0, 0);
+  };
+
+  const toggleErrorField = (pi, field) => {
+    setErrorSelections(prev => {
+      const cur = prev[pi] || [];
+      return { ...prev, [pi]: cur.includes(field) ? cur.filter(f => f !== field) : [...cur, field] };
+    });
+  };
+
+  const checkErrors = (pi) => {
+    const selected = errorSelections[pi] || [];
+    const correct = PROFILE_ERRORS[pi].fields;
+    const hits = selected.filter(f => correct.includes(f)).length;
+    setErrorFeedback(prev => ({ ...prev, [pi]: { hits, errors: PROFILE_ERRORS[pi].errors } }));
+  };
+
+  const scoreErrors = () => {
+    let score = 0;
+    PROFILE_ERRORS.forEach((p, i) => { if (errorFeedback[i]) score += errorFeedback[i].hits; });
+    setErrorScore(score);
+    setExercise(2);
+    window.scrollTo(0, 0);
+  };
+
+  const totalErrorPoints = PROFILE_ERRORS.reduce((s, p) => s + p.fields.length, 0);
+  const totalScore = (statusScore || 0) + (errorScore || 0);
+  const totalPossible = 10 + totalErrorPoints;
+
+  if (exercise === 0) return (
+    <div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 4 }}>Exercise 2A: Status Workflow</h2>
+      <p style={{ color: C.gray, fontSize: 14, marginBottom: 20 }}>For each scenario, select the correct ATS pipeline status.</p>
+      <ProgressBar current={Object.keys(statusFeedback).length} total={10} />
+      <div style={{ marginTop: 20 }}>
+        {STATUS_SCENARIOS.map((s, i) => (
+          <Card key={i} style={{ borderLeft: statusFeedback[i] ? `4px solid ${statusFeedback[i].correct ? C.green : C.red}` : `4px solid ${C.grayLt}` }}>
+            <div style={{ fontSize: 14, marginBottom: 10 }}><strong>Scenario {i + 1}:</strong> {s.scenario}</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <select value={statusAnswers[i] || ""} onChange={e => setStatusAnswers(prev => ({ ...prev, [i]: e.target.value }))} disabled={!!statusFeedback[i]}
+                style={{ padding: 8, borderRadius: 4, border: `1px solid ${C.grayLt}`, fontSize: 13, minWidth: 180 }}>
+                <option value="">Select status...</option>
+                {STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+              {!statusFeedback[i] && statusAnswers[i] && (
+                <Btn variant="outline" onClick={() => checkStatus(i)} style={{ fontSize: 12, padding: "6px 14px" }}>Check</Btn>
+              )}
+            </div>
+            {statusFeedback[i] && (
+              <div style={{ marginTop: 10, fontSize: 13, color: statusFeedback[i].correct ? C.green : C.red }}>
+                {statusFeedback[i].correct ? "\u2713 Correct" : `\u2717 Incorrect \u2014 correct: ${statusFeedback[i].answer}`}
+                <div style={{ color: C.gray, marginTop: 2 }}>{statusFeedback[i].why}</div>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+      <div style={{ marginTop: 24, textAlign: "right" }}>
+        <Btn onClick={scoreStatus} disabled={Object.keys(statusFeedback).length < 10}>Score & Continue \u2192</Btn>
+      </div>
+    </div>
+  );
+
+  if (exercise === 1) return (
+    <div>
+      <div style={{ background: C.greenLt, border: `1px solid ${C.green}`, borderRadius: 8, padding: 16, marginBottom: 24 }}>
+        <strong>Exercise 2A Result:</strong> {statusScore} / 10 correct
+      </div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 4 }}>Exercise 2B: Error Detection</h2>
+      <p style={{ color: C.gray, fontSize: 14, marginBottom: 20 }}>Each profile contains errors. Click on the field(s) you think are wrong, then check.</p>
+      {PROFILE_ERRORS.map((p, i) => (
+        <Card key={i} style={{ borderLeft: errorFeedback[i] ? `4px solid ${C.green}` : `4px solid ${C.grayLt}` }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Profile {String.fromCharCode(65 + i)}</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {Object.entries(p.profile).map(([field, value]) => (
+              <button key={field} onClick={() => !errorFeedback[i] && toggleErrorField(i, field)}
+                style={{ padding: "8px 16px", borderRadius: 6, fontSize: 13, cursor: errorFeedback[i] ? "default" : "pointer",
+                  background: errorSelections[i]?.includes(field)
+                    ? (errorFeedback[i] ? (p.fields.includes(field) ? C.greenLt : C.redLt) : C.orangeLt)
+                    : (errorFeedback[i] && p.fields.includes(field) ? C.redLt : C.white),
+                  border: `1px solid ${errorSelections[i]?.includes(field) ? C.orange : C.grayLt}` }}>
+                <span style={{ fontSize: 11, color: C.gray, display: "block" }}>{field}</span>
+                <span style={{ fontWeight: 600 }}>{value}</span>
+              </button>
+            ))}
+          </div>
+          {!errorFeedback[i] ? (
+            <div style={{ marginTop: 10, textAlign: "right" }}>
+              <Btn variant="outline" onClick={() => checkErrors(i)} style={{ fontSize: 12, padding: "6px 14px" }}>Check</Btn>
+            </div>
+          ) : (
+            <div style={{ marginTop: 10, fontSize: 13, background: C.ivory, borderRadius: 6, padding: 10 }}>
+              {errorFeedback[i].errors.map((e, j) => <div key={j}>\u2022 {e}</div>)}
+            </div>
+          )}
+        </Card>
+      ))}
+      <div style={{ marginTop: 24, textAlign: "right" }}>
+        <Btn onClick={scoreErrors} disabled={Object.keys(errorFeedback).length < 5}>Score & See Results \u2192</Btn>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 16 }}>Module 2 Results</h2>
+      <ScoreDisplay score={totalScore} total={totalPossible} pass={90} />
+      <Card><div style={{ fontSize: 14 }}><strong>Exercise 2A:</strong> {statusScore} / 10<br /><strong>Exercise 2B:</strong> {errorScore} / {totalErrorPoints}</div></Card>
+      <div style={{ textAlign: "right", marginTop: 16 }}>
+        <Btn variant="bronze" onClick={() => onComplete(totalScore, totalPossible)}>Complete Module 2 \u2192</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ===== MODULE 5 =====
+function Module5({ onComplete }) {
+  const [exercise, setExercise] = useState(0);
+  const [emails, setEmails] = useState({});
+  const [checkedItems, setCheckedItems] = useState({});
+  const [emailScores, setEmailScores] = useState({});
+  const [rfAnswers, setRfAnswers] = useState({});
+  const [rfFeedback, setRfFeedback] = useState({});
+  const [composeScore, setComposeScore] = useState(null);
+  const [rfScore, setRfScore] = useState(null);
+
+  const checkEmail = (id) => {
+    const email = emails[id] || {};
+    const checks = checkedItems[id] || [];
+    let score = 0;
+    if (email.subject && email.subject.trim().length > 5) score += 1;
+    if (email.body && email.body.trim().length > 50) score += 2;
+    if (email.body && !email.body.toLowerCase().includes(" md,") && !email.body.includes("Dr.") && !email.body.includes("Doctor")) score += 1;
+    const scenario = OUTREACH_SCENARIOS.find(s => s.id === id);
+    if (scenario.pronouns === "they/them" && email.body) {
+      if (email.body.includes("they") || email.body.includes("their") || email.body.includes("them")) score += 1;
+    } else score += 1;
+    if (checks.length >= 6) score += 2;
+    setEmailScores(prev => ({ ...prev, [id]: { score, max: 7 } }));
+  };
+
+  const scoreCompose = () => {
+    let total = 0;
+    Object.values(emailScores).forEach(s => total += s.score);
+    setComposeScore(total);
+    setExercise(1);
+    window.scrollTo(0, 0);
+  };
+
+  const checkRf = (idx) => {
+    const correct = rfAnswers[idx] === RED_FLAG_RESPONSES[idx].answer;
+    setRfFeedback(prev => ({ ...prev, [idx]: { correct, explanation: RED_FLAG_RESPONSES[idx].explanation } }));
+  };
+
+  const scoreRf = () => {
+    let correct = 0;
+    RED_FLAG_RESPONSES.forEach((r, i) => { if (rfAnswers[i] === r.answer) correct += 2; });
+    setRfScore(correct);
+    setExercise(2);
+    window.scrollTo(0, 0);
+  };
+
+  const totalScore = (composeScore || 0) + (rfScore || 0);
+  const totalPossible = 21 + 6;
+
+  if (exercise === 0) return (
+    <div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 4 }}>Exercise 5A: Outreach Email Drafts</h2>
+      <p style={{ color: C.gray, fontSize: 14, marginBottom: 20 }}>Draft outreach emails for each scenario. Complete the self-check before scoring.</p>
+      {OUTREACH_SCENARIOS.map(s => (
+        <Card key={s.id} style={{ borderLeft: emailScores[s.id] ? `4px solid ${C.green}` : `4px solid ${C.blue}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>{s.candidate} <span style={{ fontWeight: 400, color: C.gray }}>({s.pronouns})</span></div>
+              <div style={{ fontSize: 13, color: C.gray }}>{s.client} \u2014 {s.instructions}</div>
+            </div>
+            <Badge text={s.type.toUpperCase()} color={C.blue} />
+          </div>
+          <input placeholder="Subject line..." value={emails[s.id]?.subject || ""} disabled={!!emailScores[s.id]}
+            onChange={e => setEmails(prev => ({ ...prev, [s.id]: { ...prev[s.id], subject: e.target.value } }))}
+            style={{ width: "100%", padding: 8, borderRadius: 4, border: `1px solid ${C.grayLt}`, fontSize: 13, marginBottom: 6 }} />
+          <textarea placeholder="Draft your outreach email here..." value={emails[s.id]?.body || ""} rows={6} disabled={!!emailScores[s.id]}
+            onChange={e => setEmails(prev => ({ ...prev, [s.id]: { ...prev[s.id], body: e.target.value } }))}
+            style={{ width: "100%", padding: 8, borderRadius: 4, border: `1px solid ${C.grayLt}`, fontSize: 13, resize: "vertical", fontFamily: "inherit" }} />
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.gray, margin: "8px 0 6px" }}>Self-Check:</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {CHECKLIST_ITEMS.map((item, ci) => (
+              <label key={ci} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, padding: "3px 8px", background: checkedItems[s.id]?.includes(ci) ? C.greenLt : C.ivory, borderRadius: 4, cursor: "pointer" }}>
+                <input type="checkbox" checked={checkedItems[s.id]?.includes(ci) || false} disabled={!!emailScores[s.id]}
+                  onChange={() => setCheckedItems(prev => { const cur = prev[s.id] || []; return { ...prev, [s.id]: cur.includes(ci) ? cur.filter(x => x !== ci) : [...cur, ci] }; })} />
+                {item}
+              </label>
+            ))}
+          </div>
+          {!emailScores[s.id] ? (
+            <div style={{ marginTop: 10, textAlign: "right" }}>
+              <Btn variant="outline" onClick={() => checkEmail(s.id)} style={{ fontSize: 12, padding: "6px 14px" }} disabled={!emails[s.id]?.subject || !emails[s.id]?.body}>Score Email</Btn>
+            </div>
+          ) : (
+            <div style={{ marginTop: 10, fontSize: 13, color: C.green, fontWeight: 600 }}>Scored: {emailScores[s.id].score} / {emailScores[s.id].max} points</div>
+          )}
+        </Card>
+      ))}
+      <div style={{ marginTop: 24, textAlign: "right" }}>
+        <Btn onClick={scoreCompose} disabled={Object.keys(emailScores).length < 3}>Score & Continue \u2192</Btn>
+      </div>
+    </div>
+  );
+
+  if (exercise === 1) return (
+    <div>
+      <div style={{ background: C.greenLt, border: `1px solid ${C.green}`, borderRadius: 8, padding: 16, marginBottom: 24 }}>
+        <strong>Exercise 5A Result:</strong> {composeScore} / 21 points
+      </div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 4 }}>Exercise 5B: Red Flag Triage</h2>
+      <p style={{ color: C.gray, fontSize: 14, marginBottom: 20 }}>A candidate responded to your outreach. Classify each response.</p>
+      {RED_FLAG_RESPONSES.map((r, i) => (
+        <Card key={i} style={{ borderLeft: rfFeedback[i] ? `4px solid ${rfFeedback[i].correct ? C.green : C.red}` : `4px solid ${C.grayLt}` }}>
+          <div style={{ fontSize: 14, fontStyle: "italic", marginBottom: 12, lineHeight: 1.6, background: C.ivory, padding: 12, borderRadius: 6 }}>
+            \u201C{r.response}\u201D
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[["screening", "Ready for Screening", C.green], ["clarify", "Needs Clarification", C.orange], ["escalate", "Escalate to Biruh", C.red]].map(([val, label, col]) => (
+              <button key={val} onClick={() => setRfAnswers(prev => ({ ...prev, [i]: val }))} disabled={!!rfFeedback[i]}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: rfFeedback[i] ? "default" : "pointer",
+                  background: rfAnswers[i] === val ? col : "transparent", color: rfAnswers[i] === val ? C.white : C.gray,
+                  border: `1px solid ${rfAnswers[i] === val ? "transparent" : C.grayLt}` }}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {rfAnswers[i] && !rfFeedback[i] && (
+            <div style={{ marginTop: 8, textAlign: "right" }}>
+              <Btn variant="outline" onClick={() => checkRf(i)} style={{ fontSize: 12, padding: "6px 14px" }}>Check</Btn>
+            </div>
+          )}
+          {rfFeedback[i] && (
+            <div style={{ marginTop: 10, fontSize: 13, color: rfFeedback[i].correct ? C.green : C.red }}>
+              {rfFeedback[i].correct ? "\u2713 Correct" : "\u2717 Incorrect"} \u2014 {rfFeedback[i].explanation}
+            </div>
+          )}
+        </Card>
+      ))}
+      <div style={{ marginTop: 24, textAlign: "right" }}>
+        <Btn onClick={scoreRf} disabled={Object.keys(rfFeedback).length < 3}>Score & See Results \u2192</Btn>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <h2 style={{ color: C.charcoal, fontSize: 22, marginBottom: 16 }}>Module 5 Results</h2>
+      <ScoreDisplay score={totalScore} total={totalPossible} pass={80} />
+      <Card><div style={{ fontSize: 14 }}><strong>Exercise 5A:</strong> {composeScore} / 21<br /><strong>Exercise 5B:</strong> {rfScore} / 6</div></Card>
+      <div style={{ textAlign: "right", marginTop: 16 }}>
+        <Btn variant="bronze" onClick={() => onComplete(totalScore, totalPossible)}>Complete Module 5 \u2192</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ===== MAIN =====
+function App() {
+  const [view, setView] = useState("home");
+  const [scores, setScores] = useState({});
+  const [name, setName] = useState("");
+
+  const handleComplete = (mod, score, total) => {
+    setScores(prev => ({ ...prev, [mod]: { score, total } }));
+    setView("home");
+    window.scrollTo(0, 0);
+  };
+
+  const allDone = scores.m1 && scores.m2 && scores.m5;
+
+  const modules = [
+    { key: "m1", num: "1", title: "Healthcare Knowledge", desc: "License classification, candidate-client matching", color: C.purple, day: "Day 1", pass: "\u226580%", passNum: 80, ex: "2 exercises", Comp: Module1 },
+    { key: "m2", num: "2", title: "ATS Simulator", desc: "Pipeline status assignment, error detection in profiles", color: C.blue, day: "Day 2", pass: "\u226590%", passNum: 90, ex: "2 exercises", Comp: Module2 },
+    { key: "m5", num: "5", title: "Outreach Simulator", desc: "Email composition, compliance checking, red flag triage", color: C.orange, day: "Day 5", pass: "\u226580%", passNum: 80, ex: "2 exercises", Comp: Module5 },
+  ];
+
+  const currentModule = modules.find(m => m.key === view);
+  if (currentModule) {
+    const { Comp, num, title, color } = currentModule;
+    return (
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "20px 24px", fontFamily: "Georgia, serif" }}>
+        <Header onHome={() => setView("home")} />
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+          <Badge text={`MODULE ${num}`} color={color} />
+          <span style={{ fontSize: 20, fontWeight: 600, color: C.charcoal, fontFamily: "system-ui, sans-serif" }}>{title}</span>
+        </div>
+        <div style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
+          <Comp onComplete={(s, t) => handleComplete(currentModule.key, s, t)} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 800, margin: "0 auto", padding: "20px 24px", fontFamily: "Georgia, serif" }}>
+      <Header onHome={() => setView("home")} />
+      <div style={{ background: C.blue, borderRadius: 8, padding: 32, marginBottom: 32, color: C.white }}>
+        <div style={{ fontSize: 12, letterSpacing: 2, opacity: 0.7, marginBottom: 8, fontFamily: "system-ui, sans-serif" }}>DESTA WORKS \u00D7 DESTA HEALTH UNIVERSITY</div>
+        <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>Week 1 Training</div>
+        <div style={{ fontSize: 14, opacity: 0.8, fontFamily: "system-ui, sans-serif" }}>Interactive modules for Associate Recruiters. Complete each module and meet the pass threshold.</div>
+        {!name && (
+          <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+            <input placeholder="Enter your name to begin..." value={name} onChange={e => setName(e.target.value)}
+              style={{ flex: 1, padding: "8px 12px", borderRadius: 4, border: "none", fontSize: 14 }} />
+          </div>
+        )}
+      </div>
+
+      {modules.map(m => {
+        const done = !!scores[m.key];
+        const pct = done ? Math.round((scores[m.key].score / scores[m.key].total) * 100) : null;
+        return (
+          <div key={m.key} onClick={() => !done && setView(m.key)}
+            style={{ background: C.white, border: `1px solid ${done ? C.green : C.grayLt}`, borderLeft: `4px solid ${done ? C.green : m.color}`,
+              borderRadius: 8, padding: 20, marginBottom: 12, cursor: done ? "default" : "pointer" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                  <Badge text={`M${m.num}`} color={done ? C.green : m.color} />
+                  <span style={{ fontSize: 18, fontWeight: 600, color: C.charcoal, fontFamily: "system-ui, sans-serif" }}>{m.title}</span>
+                </div>
+                <div style={{ fontSize: 13, color: C.gray, fontFamily: "system-ui, sans-serif" }}>{m.desc}</div>
+              </div>
+              <div style={{ textAlign: "right", fontFamily: "system-ui, sans-serif" }}>
+                {done ? (
+                  <div>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: pct >= m.passNum ? C.green : C.red }}>{pct}%</div>
+                    <div style={{ fontSize: 11, color: C.gray }}>{scores[m.key].score}/{scores[m.key].total} pts</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: 12, color: m.color, fontWeight: 600 }}>{m.day}</div>
+                    <div style={{ fontSize: 11, color: C.gray }}>{m.ex} \u00B7 Pass: {m.pass}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            {done && <ProgressBar current={pct} total={100} />}
+          </div>
+        );
+      })}
+
+      <div style={{ background: C.purpleLt, border: `1px solid ${C.purple}`, borderRadius: 8, padding: 16, marginTop: 24, fontFamily: "system-ui, sans-serif" }}>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Modules 3, 4, and 6</div>
+        <div style={{ fontSize: 13, color: C.gray }}>Resume Conversion Lab (Day 3), Sourcing Simulator (Day 4), and Candidate Evaluation Scenarios (Day 5) are completed using the printed workbook with Biruh.</div>
+      </div>
+
+      {allDone && (
+        <div style={{ background: C.ivory, border: `2px solid ${C.bronze}`, borderRadius: 8, padding: 24, marginTop: 24, textAlign: "center" }}>
+          <div style={{ fontSize: 20, color: C.charcoal, marginBottom: 8 }}>Interactive Modules Complete</div>
+          <div style={{ fontSize: 14, color: C.gray, fontFamily: "system-ui, sans-serif", marginBottom: 8 }}>
+            {name && <span>{name} \u2014 </span>}
+            Combined: {Object.values(scores).reduce((s, v) => s + v.score, 0)} / {Object.values(scores).reduce((s, v) => s + v.total, 0)} points
+            ({Math.round(Object.values(scores).reduce((s, v) => s + v.score, 0) / Object.values(scores).reduce((s, v) => s + v.total, 0) * 100)}%)
+          </div>
+          <div style={{ fontSize: 13, color: C.gray, fontFamily: "system-ui, sans-serif" }}>
+            Complete Modules 3, 4, and 6 in the workbook with Biruh to finish Week 1 Certification.
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <Btn variant="bronze" onClick={() => {
+              const data = { name, date: new Date().toISOString().split('T')[0], modules: scores };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+              const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+              a.download = `desta-training-results-${name.replace(/\s+/g, '-').toLowerCase()}.json`;
+              a.click();
+            }}>Download Results</Btn>
+          </div>
+        </div>
+      )}
+
+      <div style={{ borderTop: `1px solid ${C.bronze}`, marginTop: 40, paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 11, color: C.gray, fontFamily: "system-ui, sans-serif" }}>Developed by Desta Works \u2502 Addis Ababa, Ethiopia</div>
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 12, letterSpacing: 3, color: C.charcoal }}>DESTA WORKS</div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
